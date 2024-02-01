@@ -1,0 +1,190 @@
+#To check cuts done by our friends of "official packages"
+OSCombination: 
+  branch:
+     decision: 'OSCombination_TAGDEC'
+     eta: 'OSCombination_TAGETA'
+  cut:  "~(eta < 0 | eta >= 0.5 | q == 0)"
+  label: "OS"
+  # cut:  "~(q == 0)"#Sevda 
+
+Combination: 
+  branch:
+     decision: 'Combination_TAGDEC'
+     eta: 'Combination_TAGETA'
+  cut:  "~(eta < 0 | eta >= 0.5 | q == 0)"
+  label: "Comb"
+
+SSCombination: 
+  branch:
+     decision: 'SSCombination_TAGDEC'
+     eta: 'SSCombination_TAGETA'
+  cut:  "~(eta < 0 | eta >= 0.5 | q == 0)"
+  label: "SS"
+
+IFT: 
+  branch:
+     # decision: 'Standard-IFT_TAGDEC'
+     # eta: 'Standard-IFT_TAGETA'
+     decision: 'Standard_IFT_TAGDEC'
+     eta: 'Standard_IFT_TAGETA'
+  cut: 'q!=0'
+  label: "IFT"
+
+OSKaonLatest: 
+  branch:
+     decision: 'B_OSKaonLatest_TAGDEC'
+     eta: 'B_OSKaonLatest_TAGETA'
+  cut:  "~(eta < 0 | eta >= 0.5 | q == 0)"
+  label: "OS"
+  # cut:  "~(q == 0)" #Sevda
+
+OSMuonLatest: 
+  branch:
+     decision: 'B_OSMuonLatest_TAGDEC'
+     eta: 'B_OSMuonLatest_TAGETA'
+  cut:  "~(eta < 0 | eta >= 0.5 | q == 0)"
+  label: "OS"
+  # cut:  "~(q == 0)"#Sevda 
+
+OSElectronLatest: 
+  branch:
+     decision: 'B_OSElectronLatest_TAGDEC'
+     eta: 'B_OSElectronLatest_TAGETA'
+  cut:  "~(eta < 0 | eta >= 0.5 | q == 0)"
+  label: "OS"
+  # cut:  "~(q == 0)"#Sevda 
+
+OSCharm: 
+  branch:
+     decision: 'B_OSCharm_TAGDEC'
+     eta: 'B_OSCharm_TAGETA'
+  cut:  "~(eta < 0 | eta >= 0.5 | q == 0)"
+  label: "OS"
+  # cut:  "~(q == 0)"#Sevda 
+
+OSVtxCh: 
+  branch:
+     decision: 'B_OSVtxCh_TAGDEC'
+     eta: 'B_OSVtxCh_TAGETA'
+  cut:  "~(eta < 0 | eta >= 0.5 | q == 0)"
+  label: "OS"
+  # cut:  "~(q == 0)"#Sevda 
+
+SSKaonLatest: 
+  branch:
+     decision: 'B_SSKaonLatest_TAGDEC'
+     eta: 'B_SSKaonLatest_TAGETA'
+  cut:  "~(eta < 0 | eta >= 0.5 | q == 0)"
+  label: "SS"
+
+SSKaon: 
+  branch:
+     decision: 'B_SSKaon_TAGDEC'
+     eta: 'B_SSKaon_TAGETA'
+  cut:  "~(eta < 0 | eta >= 0.5 | q == 0)"
+  label: "SS"
+
+SSPion: 
+  branch:
+     decision: 'B_SSPion_TAGDEC'
+     eta: 'B_SSPion_TAGETA'
+  # cut: 'q!=0 & eta!=0.5'
+  # cut: 'q!=0'
+  cut:  "~(eta < 0 | eta >= 0.5 | q == 0)"
+  label: "SS"
+
+SSProton: 
+  branch:
+     decision: 'B_SSProton_TAGDEC'
+     eta: 'B_SSProton_TAGETA'
+  # cut: 'q!=0 & eta!=0.5'
+  # cut: 'q!=0'
+  cut:  "~(eta < 0 | eta >= 0.5 | q == 0)"
+  label: "SS"
+
+list_SSComb:
+  Bu2JpsiKplus: 
+    taggers : ["SSPion", "SSProton", "SSKaonLatest"]
+    decision: ['B_SSPion_TAGDEC', 'B_SSProton_TAGDEC', "B_SSKaonLatest_TAGDEC"]
+    eta :   ['B_SSPion_TAGETA', 'B_SSProton_TAGETA', "B_SSKaonLatest_TAGETA"]
+    # taggers : ["SSPion", "SSProton"]
+    # decision: ['B_SSPion_TAGDEC', 'B_SSProton_TAGDEC']
+    # eta :   ['B_SSPion_TAGETA', 'B_SSProton_TAGETA']
+  Bs2DsPi: 
+    # taggers : ["SSKaonLatest", "SSPion", "SSProton"]
+    # decision: ["B_SSKaonLatest_TAGDEC", 'B_SSPion_TAGDEC', 'B_SSProton_TAGDEC']
+    # eta :     ["B_SSKaonLatest_TAGETA", 'B_SSPion_TAGETA', 'B_SSProton_TAGETA']
+    taggers : ["SSKaonLatest"]
+    decision: ["B_SSKaonLatest_TAGDEC"]
+    eta :     ["B_SSKaonLatest_TAGETA"]
+  Bd2JpsiKstar: 
+    # taggers : ["SSKaonLatest", "SSPion", "SSProton"]
+    # decision: ["B_SSKaonLatest_TAGDEC", 'B_SSPion_TAGDEC', 'B_SSProton_TAGDEC']
+    # eta :   ["B_SSKaonLatest_TAGETA", '  B_SSPion_TAGETA', 'B_SSProton_TAGETA']
+    taggers : ["SSPion", "SSProton"]
+    decision: ['B_SSPion_TAGDEC', 'B_SSProton_TAGDEC']
+    eta :     ['B_SSPion_TAGETA', 'B_SSProton_TAGETA']
+  MC_Bu2JpsiKplus: 
+    taggers : ["SSPion", "SSProton", "SSKaonLatest"]
+    decision: ['B_SSPion_TAGDEC', 'B_SSProton_TAGDEC', "B_SSKaonLatest_TAGDEC"]
+    eta :   ['B_SSPion_TAGETA', 'B_SSProton_TAGETA', "B_SSKaonLatest_TAGETA"]
+    # taggers : ["SSPion", "SSProton"]
+    # decision: ['B_SSPion_TAGDEC', 'B_SSProton_TAGDEC']
+    # eta :   ['B_SSPion_TAGETA', 'B_SSProton_TAGETA']
+  MC_Bs2DsPi: 
+    # taggers : ["SSKaonLatest", "SSPion", "SSProton"]
+    # decision: ["B_SSKaonLatest_TAGDEC", 'B_SSPion_TAGDEC', 'B_SSProton_TAGDEC']
+    # eta :     ["B_SSKaonLatest_TAGETA", 'B_SSPion_TAGETA', 'B_SSProton_TAGETA']
+    taggers : ["SSKaonLatest"]
+    decision: ["B_SSKaonLatest_TAGDEC"]
+    eta :     ["B_SSKaonLatest_TAGETA"]
+  MC_Bd2JpsiKstar: 
+    # taggers : ["SSKaonLatest", "SSPion", "SSProton"]
+    # decision: ["B_SSKaonLatest_TAGDEC", 'B_SSPion_TAGDEC', 'B_SSProton_TAGDEC']
+    # eta :   ["B_SSKaonLatest_TAGETA", '  B_SSPion_TAGETA', 'B_SSProton_TAGETA']
+    taggers : ["SSPion", "SSProton"]
+    decision: ['B_SSPion_TAGDEC', 'B_SSProton_TAGDEC']
+    eta :     ['B_SSPion_TAGETA', 'B_SSProton_TAGETA']
+
+  MC_Bs2JpsiPhi: 
+    # taggers : ["SSKaonLatest", "SSPion", "SSProton"]
+    # decision: ["B_SSKaonLatest_TAGDEC", 'B_SSPion_TAGDEC', 'B_SSProton_TAGDEC']
+    # eta :     ["B_SSKaonLatest_TAGETA", 'B_SSPion_TAGETA', 'B_SSProton_TAGETA']
+    taggers : ["SSKaon"]
+    decision: ["B_SSKaon_TAGDEC"]
+    eta :     ["B_SSKaon_TAGETA"]
+
+list_OSComb:
+  Bu2JpsiKplus: 
+    taggers: ['OSKaonLatest', 'OSMuonLatest', 'OSElectronLatest', 'OSCharm', 'OSVtxCh']
+    decision: ['B_OSKaonLatest_TAGDEC', 'B_OSMuonLatest_TAGDEC', 'B_OSElectronLatest_TAGDEC', 'B_OSCharm_TAGDEC', 'B_OSVtxCh_TAGDEC']
+    eta :   ['B_OSKaonLatest_TAGETA', 'B_OSMuonLatest_TAGETA', 'B_OSElectronLatest_TAGETA', 'B_OSCharm_TAGETA', 'B_OSVtxCh_TAGETA']
+  Bs2DsPi: 
+    taggers: ['OSKaonLatest', 'OSMuonLatest', 'OSElectronLatest', 'OSCharm', 'OSVtxCh']
+    decision: ['B_OSKaonLatest_TAGDEC', 'B_OSMuonLatest_TAGDEC', 'B_OSElectronLatest_TAGDEC', 'B_OSCharm_TAGDEC', 'B_OSVtxCh_TAGDEC']
+    eta :   ['B_OSKaonLatest_TAGETA', 'B_OSMuonLatest_TAGETA', 'B_OSElectronLatest_TAGETA', 'B_OSCharm_TAGETA', 'B_OSVtxCh_TAGETA']
+  Bd2JpsiKstar: 
+    taggers: ['OSKaonLatest', 'OSMuonLatest', 'OSElectronLatest', 'OSCharm', 'OSVtxCh']
+    decision: ['B_OSKaonLatest_TAGDEC', 'B_OSMuonLatest_TAGDEC', 'B_OSElectronLatest_TAGDEC', 'B_OSCharm_TAGDEC', 'B_OSVtxCh_TAGDEC']
+    eta :   ['B_OSKaonLatest_TAGETA', 'B_OSMuonLatest_TAGETA', 'B_OSElectronLatest_TAGETA', 'B_OSCharm_TAGETA', 'B_OSVtxCh_TAGETA']
+
+  MC_Bu2JpsiKplus: 
+    taggers: ['OSKaonLatest', 'OSMuonLatest', 'OSElectronLatest', 'OSCharm', 'OSVtxCh']
+    decision: ['B_OSKaonLatest_TAGDEC', 'B_OSMuonLatest_TAGDEC', 'B_OSElectronLatest_TAGDEC', 'B_OSCharm_TAGDEC', 'B_OSVtxCh_TAGDEC']
+    eta :   ['B_OSKaonLatest_TAGETA', 'B_OSMuonLatest_TAGETA', 'B_OSElectronLatest_TAGETA', 'B_OSCharm_TAGETA', 'B_OSVtxCh_TAGETA']
+  MC_Bs2DsPi: 
+    taggers: ['OSKaonLatest', 'OSMuonLatest', 'OSElectronLatest', 'OSCharm', 'OSVtxCh']
+    decision: ['B_OSKaonLatest_TAGDEC', 'B_OSMuonLatest_TAGDEC', 'B_OSElectronLatest_TAGDEC', 'B_OSCharm_TAGDEC', 'B_OSVtxCh_TAGDEC']
+    eta :   ['B_OSKaonLatest_TAGETA', 'B_OSMuonLatest_TAGETA', 'B_OSElectronLatest_TAGETA', 'B_OSCharm_TAGETA', 'B_OSVtxCh_TAGETA']
+  MC_Bd2JpsiKstar: 
+    taggers: ['OSKaonLatest', 'OSMuonLatest', 'OSElectronLatest', 'OSCharm', 'OSVtxCh']
+    decision: ['B_OSKaonLatest_TAGDEC', 'B_OSMuonLatest_TAGDEC', 'B_OSElectronLatest_TAGDEC', 'B_OSCharm_TAGDEC', 'B_OSVtxCh_TAGDEC']
+    eta :   ['B_OSKaonLatest_TAGETA', 'B_OSMuonLatest_TAGETA', 'B_OSElectronLatest_TAGETA', 'B_OSCharm_TAGETA', 'B_OSVtxCh_TAGETA']
+
+  MC_Bs2JpsiPhi: 
+    taggers: ['OSKaonLatest', 'OSMuonLatest', 'OSElectronLatest', 'OSCharm', 'OSVtxCh']
+    decision: ['B_OSKaonLatest_TAGDEC', 'B_OSMuonLatest_TAGDEC', 'B_OSElectronLatest_TAGDEC', 'B_OSCharm_TAGDEC', 'B_OSVtxCh_TAGDEC']
+    eta :   ['B_OSKaonLatest_TAGETA', 'B_OSMuonLatest_TAGETA', 'B_OSElectronLatest_TAGETA', 'B_OSCharm_TAGETA', 'B_OSVtxCh_TAGETA']
+
+
+

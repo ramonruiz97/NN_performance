@@ -1,0 +1,530 @@
+__author__ = ["Ramón Ángel Ruiz Fernández"]
+__email__ = ["rruizfer@cern.ch"]
+
+with open("config/selection.yml") as conf:
+  sel_config = yaml.load(conf, Loader=yaml.FullLoader)
+
+translator = config.version_to_train
+
+
+#This could be changed by the usual -> PID - GBW8 - BDT
+#For the moment enough
+
+rule rectangular_selection:
+  """
+  Rule for creating selection (basic, rectangular)
+  """
+  threads: 2
+  resources:
+    mem_mb=6000
+  wildcard_constraints:
+    mode = "(MC_)?(Bu2JpsiKplus|Bs2DsPi|Bd2JpsiKstar|Bs2JpsiPhi)",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|sigmat|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(\d)?(p\d)?",
+    
+  input:
+    # root = TUPLES+"/{year}/{mode}/{mode}_{year}_presel.root"
+    root = lambda wcs: expand( TUPLES+"/{year}/{mode}/{mode}_{year}_{model}_tagged_{cut}.root", 
+                                 year = wcs.year,
+                                 mode = wcs.mode,
+                                 model = translator[wcs.version][0],
+                                 cut = translator[wcs.version][1])
+  output:
+    TUPLES+"/{year}/{mode}/{version}_{binvar}_selected.root"
+  log:
+    "output/log/rect_sel/{year}/{mode}/{version}_{binvar}.log"
+  run:
+    shell(f"""
+            (time\
+            python selection/rect_sel.py\
+            --input {input.root}\
+            --year {wildcards.year}\
+            --version {wildcards.version}\
+            --mode {wildcards.mode}\
+            --var {wildcards.binvar}\
+            --output {output}\
+            ) &> {log}
+            """)
+
+rule rectangular_selection_prompt:
+  """
+  Rule for creating selection (basic, rectangular)
+  """
+  threads: 2
+  resources:
+    mem_mb=6000
+  wildcard_constraints:
+    mode = "(MC_)?(Bs2DsPi)(_Prompt)(no)?",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|sigmat|nPV)(\d{1})?",
+    # version = "v(0|1)r(\d)(p\d)?",
+    version = "v(\d)r(\d)(\d)?(p\d)?",
+  input:
+    #Final answer: Bs2DsPi_Prompt_{year}_presel.root -> 
+    #Jordy (no cuts) + Kechen cuts (wo Bs mass cut)
+    root = lambda wcs: expand(TUPLES+"/{year}/{mode}/{mode}_{year}_{prefix}.root",
+                              year = wcs.year,
+                              mode = wcs.mode,
+                              #Jordy implies DsK selection already applied, no more needed
+                              prefix = "Jordy_presel" if "Promptno" not in wcs.mode else "presel"
+                              ),
+
+  output:
+    TUPLES+"/{year}/{mode}/{version}_{binvar}_selected.root"
+  log:
+    "output/log/rect_sel/{year}/{mode}/{version}_{binvar}.log"
+  run:
+    shell(f"""
+            (time\
+            python selection/rect_sel.py\
+            --input {input.root}\
+            --year {wildcards.year}\
+            --version {wildcards.version}\
+            --mode {wildcards.mode}\
+            --var {wildcards.binvar}\
+            --output {output}\
+            ) &> {log}
+            """)
+
+
+rule mass_prefit_Bu:
+  """
+     Fit for obtaining the shapes of Bu2JpsiKplus & Bs2DsPi_prompt,
+     Only bkgcat 0, 50 (signal) and take the shapes for the Mass Fit of the data
+     The shapes are saved in a json with the results of the fit
+  """
+  threads: 2
+  resources:
+    mem_mb=6000
+  wildcard_constraints:
+    mode = "MC_Bu2JpsiKplus",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|sigmat|nPV)(\d{1})?",
+    trigger = "(biased|unbiased)",
+    version = "v(\d)r(\d)(\d)?(p\d)?",
+  input:
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_selected.root"
+  output:
+    params = "output/params/mass_prefit/{year}/{mode}/{version}_{binvar}_{trigger}.json",
+    plots =  directory("output/figures/mass_prefit/{year}/{mode}/{version}_{binvar}_{trigger}/")
+  log:
+    'output/log/mass_prefit/{year}/{mode}/{version}_{binvar}_{trigger}.log',
+  run:
+    shell(f"""(time\
+      python selection/mf_bu.py \
+    --sample {input.root} \
+    --output-params {output.params} \
+    --output-figures {output.plots} \
+    --mode {wildcards.mode} \
+    --trigger {wildcards.trigger}\
+    ) &> {log}""")
+
+
+rule mass_prefit_Bs2DsPi_Prompt:
+  """
+     Fit for obtaining the shapes of Bu2JpsiKplus & Bs2DsPi_prompt,
+     Only Ds_bkgcat <30, 50 (signal) and take the shapes for the Mass Fit of the data
+     The shapes are saved in a json with the results of the fit
+     This is only done without splitting by trigger category
+  """
+  threads: 2
+  resources:
+    mem_mb=6000
+  wildcard_constraints:
+    mode = "MC_Bs2DsPi_Prompt(no)?",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|sigmat|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(\d)?(p\d)?",
+  input:
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_selected.root"
+  output:
+    params = "output/params/mass_prefit/{year}/{mode}/{version}_{binvar}_combined.json",
+    plots =  directory("output/figures/mass_prefit/{year}/{mode}/{version}_{binvar}_combined/")
+  log:
+    'output/log/mass_prefit/{year}/{mode}/{version}_{binvar}_combined.log',
+  run:
+    shell(f"""(time\
+      python selection/mf_dsprompt.py \
+    --sample {input.root} \
+    --mass-branch Ds_M \
+    --output-params {output.params} \
+    --output-figures {output.plots} \
+    --mode {wildcards.mode} \
+    --year {wildcards.year} \
+    ) &> {log}""")
+
+rule mass_fit_Bu:
+  """
+     Mass Fits of Bu2JpsiKplus
+     This work for Bu data and MC_Bu (where also category 60 is included)
+  """
+  threads: 2
+  resources:
+    mem_mb=6000
+  wildcard_constraints:
+    mode = "(MC_)?Bu2JpsiKplus",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|sigmat|nPV)(\d{1})?",
+    trigger = "(biased|unbiased)",
+    version = "v(\d)r(\d)(\d)?(p\d)?",
+  input:
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_selected.root",
+    params = "output/params/mass_prefit/{year}/MC_{mode}/{version}_{binvar}_{trigger}.json"
+  output:
+    params = 'output/params/mass_fit/{year}/{mode}/{version}_{binvar}_{trigger}.json',
+    sweights = temp(TUPLES+"/{year}/{mode}/{version}_{binvar}_{trigger}.npy"), 
+    plots =  directory("output/figures/mass_fit/{year}/{version}_{mode}/{binvar}_{trigger}/")
+  log:
+    'output/log/mass_fit/{year}/{mode}/{version}_{binvar}_{trigger}.log',
+  run:
+    shell(f"""(time\
+      python selection/mf_bu.py \
+    --sample {input.root} \
+    --input-params {input.params} \
+    --output-params {output.params} \
+    --output-figures {output.plots} \
+    --sweights {output.sweights} \
+    --mode {wildcards.mode} \
+    --trigger {wildcards.trigger}\
+    ) &> {log}""")
+
+
+rule mass_fit_Bs_Prompt:
+  """
+     Mass Fits of Bs2DsPi_Prompt
+     This work for Bu data and MC_Bu (where also category 60 is included)
+  """
+  threads: 2
+  resources:
+    mem_mb=6000
+  wildcard_constraints:
+    mode = "(MC_)?Bs2DsPi_Prompt",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|sigmat|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(\d)?(p\d)?",
+  input:
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_selected.root",
+    #MC_Promptno -> Our tuples actually can be replaced by normal MC
+    params = lambda wcs : expand("output/params/mass_prefit/{year}/{mc_mode}/{version}_{binvar}_combined.json",
+                                 mc_mode = "MC_Bs2DsPi_Promptno",
+                                 year = wcs.year,
+                                 version = wcs.version,
+                                 binvar = wcs.binvar)
+  output:
+    params = 'output/params/mass_fit/{year}/{mode}/{version}_{binvar}_combined.json',
+    sweights = TUPLES+"/{year}/{mode}/{version}_{binvar}_sweighted.root", 
+    plots =  directory("output/figures/mass_fit/{year}/{version}_{mode}/{binvar}_combined/")
+  log:
+    'output/log/mass_fit/{year}/{mode}/{version}_{binvar}_combined.log',
+  run:
+    shell(f"""(time\
+      python selection/mf_dsprompt.py \
+    --sample {input.root} \
+    --input-params {input.params} \
+    --output-params {output.params} \
+    --output-figures {output.plots} \
+    --mass-branch Ds_M \
+    --sweights {output.sweights} \
+    --mode {wildcards.mode} \
+    --year {wildcards.year} \
+    ) &> {log}""")
+
+
+rule sWeights_DsPi_MCfit:
+  """
+    Sweights for DsPi MC
+	B_BKGCAT = 0, 20, 50 
+    prefit for taking hypatia shape
+    mass_window -> narrow
+  """
+  wildcard_constraints:
+    mode = "MC_Bs2DsPi",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|sigmat|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(\d)?(p\d)?",
+  input:
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_selected.root"
+  output:
+    params = "output/params/mass_mcfit/{year}/{mode}/{version}_{binvar}.json",
+    plots =  directory("output/figures/mass_mcfit/{year}/{mode}/{version}_{binvar}/")
+  log:
+    'output/log/mass_mcfit/{year}/{mode}/{version}_{binvar}.log',
+  run:
+    shell(f"""(time\
+        python selection/mc_ds.py\
+        --sample {input.root}\
+        --output-params {output.params}\
+        --output-figures {output.plots}\
+        --mass-branch B_M\
+        --mode {wildcards.mode}\
+        --version {wildcards.version}\
+        ) &> {log}""") 
+
+
+rule sWeights_DsPi_prefit:
+    """
+    Sweights for DsPi data
+    Prefit -> Wide window 
+    """
+    wildcard_constraints:
+      mode = "Bs2DsPi",
+      year = "20(1516|15|16|17|18)",
+      binvar = "(full|pTB|eta|nTracks|sigmat|nPV)(\d{1})?",
+      version = "v(\d)r(\d)(\d)?(p\d)?",
+    input:
+      data = TUPLES+"/{year}/{mode}/{version}_{binvar}_selected.root",
+      params = "output/params/mass_mcfit/{year}/MC_{mode}/{version}_{binvar}.json",
+      templates = ["/scratch47/ramon.ruiz/tuples_ift/templates/bs_dskx.root",
+                    "/scratch47/ramon.ruiz/tuples_ift/templates/bs_dsx.root",
+                    "/scratch47/ramon.ruiz/tuples_ift/templates/DsK_mass_template.root"
+                    ]
+    output:
+      params = "output/params/mass_prefit/{year}/{mode}/{version}_{binvar}.json",
+      plots = directory("output/figures/mass_prefit/{year}/{mode}/{version}_{binvar}/"),
+    log:
+      "output/log/mass_prefit/{year}/{mode}/{version}_{binvar}.log"
+    run:
+      shell(f"""(time\
+            python selection/ds.py\
+            --sample {input.data}\
+            --input-params {input.params}\
+            --templates {",".join(input.templates)}\
+            --output-params {output.params}\
+            --output-figures {output.plots}\
+            --mass-branch B_M\
+            --mode {wildcards.mode}\
+            --year {wildcards.year}\
+            --version {wildcards.version}\
+            ) &> {log}""")
+
+rule sWeights_DsPi_fit:
+    """
+    Sweights for DsPi data
+    Prefit -> Wide window
+    """
+    wildcard_constraints:
+      mode = "Bs2DsPi",
+      year = "20(1516|15|16|17|18)",
+      version = "v(\d)r(\d)(\d)?(p\d)?",
+      binvar = "(full|pTB|eta|nTracks|sigmat|nPV)(\d{1})?",
+    input:
+        data = TUPLES+"/{year}/{mode}/{version}_{binvar}_selected.root",
+        templates = ["/scratch47/ramon.ruiz/tuples_ift/templates/bs_dskx.root",
+                    "/scratch47/ramon.ruiz/tuples_ift/templates/bs_dsx.root",
+                    "/scratch47/ramon.ruiz/tuples_ift/templates/DsK_mass_template.root"
+                    ],
+        params = "output/params/mass_prefit/{year}/{mode}/{version}_{binvar}.json",
+    output:
+        params = "output/params/mass_fit/{year}/{mode}/{version}_{binvar}.json",
+        data = TUPLES+"/{year}/{mode}/{version}_{binvar}_sweighted.root",
+        figures = directory("output/figures/mass_fit/{year}/{mode}/{version}_{binvar}/"),
+    log:
+        "output/log/mass_fit/{year}/{mode}/{version}_{binvar}.log",
+    run:
+        shell(f"""(time\
+            python selection/ds.py\
+            --sample {input.data}\
+            --input-params {input.params}\
+            --templates {",".join(input.templates)}\
+            --input-params {input.params}\
+            --output-params {output.params}\
+            --output-figures {output.figures}\
+            --output-sample {output.data}\
+            --mass-branch B_M\
+            --mode {wildcards.mode}\
+            --year {wildcards.year}\
+            --version {wildcards.version}\
+            ) &> {log}""")
+
+
+#Old When done by trigger-cat
+
+# rule mass_prefit_Bd:
+#   """
+#      Fit for obtaining the shapes of Bu2JpsiKplus & Bs2DsPi_prompt,
+#      Only bkgcat 0, 50 (signal) and take the shapes for the Mass Fit of the data
+#      The shapes are saved in a json with the results of the fit
+#   """
+#   threads: 2
+#   resources:
+#     mem_mb=6000
+#   wildcard_constraints:
+#     mode = "MC_Bd2JpsiKstar",
+#     year = "20(1516|15|16|17|18)",
+#     binvar = "(full|pTB|eta|nTracks|sigmat|nPV)(\d{1})?",
+#     trigger = "(biased|unbiased)",
+#     version = "v(\d)r(\d)(\d)?(p\d)?",
+#   input:
+#     root = TUPLES+"/{year}/{mode}/{version}_{binvar}_selected.root"
+#   output:
+#     params = "output/params/mass_prefit/{year}/{mode}/{version}_{binvar}_{trigger}.json",
+#     plots =  directory("output/figures/mass_prefit/{year}/{mode}/{version}_{binvar}_{trigger}/")
+#   log:
+#     'output/log/mass_prefit/{year}/{mode}/{version}_{binvar}_{trigger}.log',
+#   run:
+#     shell(f"""(time\
+#       python selection/mf_bd.py \
+#     --sample {input.root} \
+#     --output-params {output.params} \
+#     --output-figures {output.plots} \
+#     --mode {wildcards.mode} \
+#     --trigger {wildcards.trigger}\
+#     ) &> {log}""")
+#
+#
+# rule mass_fit_Bd:
+#   """
+#      Mass Fits of Bu2JpsiKplus
+#      This work for Bu data and MC_Bu (where also category 60 is included)
+#   """
+#   threads: 2
+#   resources:
+#     mem_mb=6000
+#   wildcard_constraints:
+#     mode = "(MC_)?Bd2JpsiKstar",
+#     year = "20(1516|15|16|17|18)",
+#     binvar = "(full|pTB|eta|nTracks|sigmat|nPV)(\d{1})?",
+#     trigger = "(biased|unbiased)",
+#     version = "v(\d)r(\d)(\d)?(p\d)?",
+#   input:
+#     root = TUPLES+"/{year}/{mode}/{version}_{binvar}_selected.root",
+#     params = lambda wcs: expand("output/params/mass_prefit/{year}/{mode}/{version}_{binvar}_{trigger}.json",
+#                                  year = wcs.year,
+#                                  mode = wcs.mode if "MC" in wcs.mode else "MC_"+wcs.mode,
+#                                  version = wcs.version,
+#                                  binvar = wcs.binvar,
+#                                  trigger = wcs.trigger
+#                                  )
+#   output:
+#     params = 'output/params/mass_fit/{year}/{mode}/{version}_{binvar}_{trigger}.json',
+#     sweights = temp(TUPLES+"/{year}/{mode}/{version}_{binvar}_{trigger}.npy"),
+#     plots =  directory("output/figures/mass_fit/{year}/{version}_{mode}/{binvar}_{trigger}/")
+#   log:
+#     'output/log/mass_fit/{year}/{mode}/{version}_{binvar}_{trigger}.log',
+#   run:
+#     shell(f"""(time\
+#       python selection/mf_bd.py \
+#     --sample {input.root} \
+#     --input-params {input.params} \
+#     --output-params {output.params} \
+#     --output-figures {output.plots} \
+#     --sweights {output.sweights} \
+#     --mode {wildcards.mode} \
+#     --trigger {wildcards.trigger}\
+#     ) &> {log}""")
+#
+# #TODO sw8 for the rest of the modes
+#
+# rule create_sw8_tuple:
+#   threads: 2
+#   resources:
+#     mem_mb=6000
+#   wildcard_constraints:
+#     mode = "(MC_)?(Bu2JpsiKplus|Bd2JpsiKstar)",
+#     version = "v(\d)r(\d)(\d)?(p\d)?",
+#   input:
+#     root = TUPLES+"/{year}/{mode}/{version}_{binvar}_selected.root",
+#     npy = lambda wcs: expand(
+#                 TUPLES+"/{year}/{mode}/{version}_{binvar}_{trigger}.npy",
+#                 binvar = wcs.binvar,
+#                 mode= wcs.mode,
+#                 year = wcs.year,
+#                 version = wcs.version,
+#                 trigger = ["biased", "unbiased"],
+#             ),
+#   output:
+#     root = TUPLES+"/{year}/{mode}/{version}_{binvar}_sweighted.root"
+#   log:
+#     "output/log/{year}/{mode}/{version}_{binvar}_sweighted.log"
+#
+#   run:
+#     shell(f"""(time\
+#       python selection/sweights_add.py \
+#       --input-sample {input.root} \
+#       --output-sample {output.root} \
+#       --mode {wildcards.mode} \
+#       --version {wildcards.binvar} \
+#       --weights {",".join(input.npy)}\
+#       ) &> {log}""")
+
+
+
+
+rule mass_prefit_Bd:
+  """
+     Fit for obtaining the shapes of Bu2JpsiKplus & Bs2DsPi_prompt,
+     Only bkgcat 0, 50 (signal) and take the shapes for the Mass Fit of the data
+     The shapes are saved in a json with the results of the fit
+  """
+  threads: 2
+  resources:
+    mem_mb=6000
+  wildcard_constraints:
+    mode = "MC_Bd2JpsiKstar",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|sigmat|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(\d)?(p\d)?",
+  input:
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_selected.root"
+  output:
+    params = "output/params/mass_prefit/{year}/{mode}/{version}_{binvar}.json",
+    plots =  directory("output/figures/mass_prefit/{year}/{mode}/{version}_{binvar}/")
+  log:
+    'output/log/mass_prefit/{year}/{mode}/{version}_{binvar}.log',
+  run:
+    shell(f"""(time\
+      python selection/mf_bd.py \
+    --sample {input.root} \
+    --output-params {output.params} \
+    --output-figures {output.plots} \
+    --mode {wildcards.mode} \
+    ) &> {log}""")
+
+rule mass_fit_Bd:
+  """
+     Mass Fits of Bu2JpsiKplus
+     This work for Bu data and MC_Bu (where also category 60 is included)
+  """
+  threads: 2
+  resources:
+    mem_mb=6000
+  wildcard_constraints:
+    mode = "(MC_)?Bd2JpsiKstar",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|sigmat|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(\d)?(p\d)?",
+  input:
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_selected.root",
+    params = lambda wcs: expand("output/params/mass_prefit/{year}/{mode}/{version}_{binvar}.json",
+                                 year = wcs.year,
+                                 mode = wcs.mode if "MC" in wcs.mode else "MC_"+wcs.mode,
+                                 version = wcs.version,
+                                 binvar = wcs.binvar,
+                                 )
+  output:
+    params = 'output/params/mass_fit/{year}/{mode}/{version}_{binvar}.json',
+    sweights = TUPLES+"/{year}/{mode}/{version}_{binvar}_sweighted.root",
+    plots =  directory("output/figures/mass_fit/{year}/{version}_{mode}/{binvar}/")
+  log:
+    'output/log/mass_fit/{year}/{mode}/{version}_{binvar}.log',
+  run:
+    shell(f"""(time\
+      python selection/mf_bd.py \
+    --sample {input.root} \
+    --input-params {input.params} \
+    --output-params {output.params} \
+    --output-figures {output.plots} \
+    --sweights {output.sweights} \
+    --mode {wildcards.mode} \
+    ) &> {log}""")
+    
+
+
+
+
+    
+
+
+
+  

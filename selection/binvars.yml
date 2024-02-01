@@ -1,0 +1,88 @@
+Bs2DsPi: &Bs2DsPi
+    "pTB0" : "( B_PT > 23.622 & B_PT<=6056 )"
+    "pTB1" : "( B_PT > 6056 & B_PT<=8607 )"
+    "pTB2" : "( B_PT > 8607 & B_PT<= 11832 )"
+    "pTB3" : "( B_PT > 11832 )"
+    # bins of npvs 
+    "nPV0": 'nPVs==1'
+    "nPV1": 'nPVs==2'
+    "nPV2": 'nPVs>=3'
+    # bins of etaB -> This is valid for Bs (to check is also valid for the rest)
+    "eta0": "B_ETA >= 0 & B_ETA <= 2.793"
+    "eta1": "B_ETA > 2.793 & B_ETA <= 3.156"
+    "eta2": "B_ETA > 3.156 & B_ETA <= 3.56"
+    "eta3": "B_ETA > 3.56"
+    # bins of nTracks
+    "nTracks0": "nTracks <= 109.1"
+    "nTracks1": "nTracks > 109.3 & nTracks <= 152"
+    "nTracks2": "nTracks > 152 & nTracks <= 201.3"
+    "nTracks3": "nTracks > 201.3"
+    #bins of sigmat -> Valid for Bs2DsPi_Prompt
+    "sigmat0": '( sigmat > 0. & sigmat<= 25.7 )'
+    "sigmat1": '( sigmat > 25.7 & sigmat <= 31.4 )'
+    "sigmat2":  '( sigmat > 31.4 & sigmat<= 36.4 )'
+    "sigmat3": '( sigmat > 36.4 & sigmat<= 41.0)'
+    "sigmat4": '( sigmat > 41. & sigmat<= 45.4 )'
+    "sigmat5": '( sigmat > 45.4 & sigmat<= 49.8 )'
+    "sigmat6":  '( sigmat > 49.8 & sigmat<= 54.5 )'
+    "sigmat7":  '( sigmat > 54.5 & sigmat<= 63.6 )'
+    "sigmat8":  '( sigmat > 63.6 & sigmat<= 71.5 )'
+    "sigmat9":  '( sigmat > 71.5 & sigmat<= 100.)'
+
+MC_Bs2DsPi: &MC_Bs2DsPi
+    <<: *Bs2DsPi
+
+MC_Bs2DsPi_Promptno: &MC_Bs2DsPi_Promptno
+    <<: *Bs2DsPi
+Bs2DsPi_Prompt: &Bs2DsPi_Prompt
+    <<: *Bs2DsPi
+
+MC_Bs2DsPi_Prompt: &MC_Bs2DsPi_Prompt
+    <<: *Bs2DsPi
+
+Bd2JpsiKstar: &Bd2JpsiKstar
+    "sigmat0": "( sigmat > 0.0 & sigmat<0.019 )"
+    "sigmat1": "( sigmat > 0.019 & sigmat<0.023 )"
+    "sigmat2": "( sigmat > 0.023 & sigmat<0.026 )"
+    "sigmat3": "( sigmat > 0.026 & sigmat<0.028 )"
+    "sigmat4": "( sigmat > 0.028 & sigmat<0.031 )"
+    "sigmat5": "( sigmat > 0.031 & sigmat<0.034 )"
+    "sigmat6": "( sigmat > 0.034 & sigmat<0.036 )"
+    "sigmat7": "( sigmat > 0.036 & sigmat<0.04 )"
+    "sigmat8": "( sigmat > 0.04 & sigmat<0.045 )"
+    "sigmat9": "( sigmat > 0.045 & sigmat<0.15 )"
+    #bins of PT
+    "pTB0" : "( B_PT > 0. & B_PT< 4868 )"
+    "pTB1" : "( B_PT > 4868 & B_PT< 7261 )"
+    "pTB2" : "( B_PT > 7261 & B_PT< 10685 )"
+    "pTB3" : "( B_PT > 10685 )"
+    # bins of npvs 
+    "nPV0": 'nPVs==1'
+    "nPV1": 'nPVs==2'
+    "nPV2": 'nPVs>=3'
+    #bins of etaB
+    "eta0": "B_ETA > 0 & B_ETA <= 3.08"
+    "eta1": "B_ETA > 3.08 & B_ETA <= 3.57"
+    "eta2": "B_ETA > 3.57 & B_ETA <= 4.10"
+    "eta3": "B_ETA > 4.10"
+    # bins of nTracks
+    "nTracks0": "nTracks > 0. & nTracks <= 122."
+    "nTracks1": "nTracks > 122. & nTracks <= 183.9"
+    "nTracks2": "nTracks > 183.9 & nTracks <= 273.9"
+    "nTracks3": "nTracks > 273.9"
+
+MC_Bd2JpsiKstar: &MC_Bd2JpsiKstar
+    <<: *Bd2JpsiKstar 
+
+MC_Bs2JpsiPhi: &MC_Bs2JpsiPhi
+    "eta0": "B_ETA > 0 & B_ETA <= 3.01"
+    "eta1": "B_ETA > 3.01 & B_ETA <= 3.45"
+    "eta2": "B_ETA > 3.45 & B_ETA <= 3.93"
+    "eta3": "B_ETA > 3.93"
+
+    "pTB0" : "( B_PT > 0. & B_PT< 4140 )"
+    "pTB1" : "( B_PT > 4140 & B_PT< 6600 )"
+    "pTB2" : "( B_PT > 6600 & B_PT< 9833 )"
+    "pTB3" : "( B_PT > 9833)"
+
+  

@@ -1,0 +1,27 @@
+Bs2DsPi:
+  "B_Hlt2Topo2BodyDecision_TOS"
+  "B_Hlt2Topo3BodyDecision_TOS"
+  "B_Hlt2Topo4BodyDecision_TOS"
+  "B_Hlt2Topo2BodyDecision_TIS"
+  "B_Hlt2Topo3BodyDecision_TIS"
+  "B_Hlt2Topo4BodyDecision_TIS"
+  "L0_TOS"
+  "L0_TIS"
+  "B_Hlt1TrackMVADecision_TIS" 
+  "B_Hlt1TwoTrackMVADecision_TIS"
+  "B_LOKI_DTF_CTAUERR"
+
+MC_Bs2DsPi:
+  "B_Hlt2Topo2BodyDecision_TOS"
+  "B_Hlt2Topo3BodyDecision_TOS"
+  "B_Hlt2Topo4BodyDecision_TOS"
+  "B_Hlt2Topo2BodyDecision_TIS"
+  "B_Hlt2Topo3BodyDecision_TIS"
+  "B_Hlt2Topo4BodyDecision_TIS"
+  "L0_TOS"
+  "L0_TIS"
+  "B_Hlt1TrackMVADecision_TIS" 
+  "B_Hlt1TwoTrackMVADecision_TIS"
+  "B_LOKI_DTF_CTAUERR"
+  "B_TRUETAU > 0."
+

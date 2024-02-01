@@ -1,0 +1,272 @@
+common: &common
+    #Trigger
+    "B_L0Global_Dec" : "B_L0Global_Dec"
+    "Jpsi_Hlt1DiMuonHighMassDecision_TOS" : "Jpsi_Hlt1DiMuonHighMassDecision_TOS"
+    "Jpsi_Hlt1TrackMuonDecision_TOS" : "Jpsi_Hlt1TrackMuonDecision_TOS"
+    "B_Hlt1TwoTrackMVADecision_TOS" : "B_Hlt1TwoTrackMVADecision_TOS"
+    "Jpsi_Hlt2DiMuonDetachedJPsiDecision_TOS" : "Jpsi_Hlt2DiMuonDetachedJPsiDecision_TOS"
+
+    #We should use the ones that are commented
+    'time': 'B_LOKI_DTF_CTAU/0.29979245'
+    # 'sigmat': 'B_LOKI_DTF_CTAUERR/0.29979245' #Not there :()
+    'sigmat': 'B_TAUERR*1000'
+    #Not trigger for the moment
+    # 'hlt1b': 'hlt1b'
+    'B_PT': 'B_PT'
+    'B_ETA': 'B_LOKI_ETA'
+    'nPVs': 'nPVs'
+    'nTracks': 'nTracks'
+    "B_ConstJpsi_M" : "B_ConstJpsi_M"
+    # "B_M" : "B_M"
+    "B_LOKI_DTF_CTAU" : "B_LOKI_DTF_CTAU"
+    'B_ID': 'B_ID'
+   
+tagging: &tagging
+    #OS
+    'B_OSCharm_TAGDEC': 'B_OSCharm_TAGDEC'
+    'B_OSCharm_TAGETA': 'B_OSCharm_TAGETA'
+    # 'B_OSElectron_TAGDEC': 'B_OSElectron_TAGDEC'
+    # 'B_OSElectron_TAGETA': 'B_OSElectron_TAGETA'
+    'B_OSElectronLatest_TAGDEC': 'B_OSElectronLatest_TAGDEC'
+    'B_OSElectronLatest_TAGETA': 'B_OSElectronLatest_TAGETA'
+    # 'B_OSKaon_TAGDEC': 'B_OSKaon_TAGDEC'
+    # 'B_OSKaon_TAGETA': 'B_OSKaon_TAGETA'
+    'B_OSKaonLatest_TAGDEC': 'B_OSKaonLatest_TAGDEC'
+    'B_OSKaonLatest_TAGETA': 'B_OSKaonLatest_TAGETA'
+    # 'B_OSMuon_TAGDEC': 'B_OSMuon_TAGDEC'
+    # 'B_OSMuon_TAGETA': 'B_OSMuon_TAGETA'
+    'B_OSMuonLatest_TAGDEC': 'B_OSMuonLatest_TAGDEC'
+    'B_OSMuonLatest_TAGETA': 'B_OSMuonLatest_TAGETA'
+    'B_OSVtxCh_TAGDEC': 'B_OSVtxCh_TAGDEC'
+    'B_OSVtxCh_TAGETA': 'B_OSVtxCh_TAGETA'
+
+    #SS
+    # 'B_SSKaon_TAGDEC': 'B_SSKaon_TAGDEC'
+    # 'B_SSKaon_TAGETA': 'B_SSKaon_TAGETA'
+    'B_SSKaonLatest_TAGDEC': 'B_SSKaonLatest_TAGDEC'
+    'B_SSKaonLatest_TAGETA': 'B_SSKaonLatest_TAGETA'
+    'B_SSPion_TAGDEC'   : 'B_SSPion_TAGDEC' 
+    'B_SSProton_TAGDEC' : 'B_SSProton_TAGDEC'
+    'B_SSPion_TAGETA'   : 'B_SSPion_TAGETA' 
+    'B_SSProton_TAGETA' : 'B_SSProton_TAGETA'
+
+    #IFT
+    # 'B_IFT_InclusiveTagger_TAGDEC': 'B_IFT_InclusiveTagger_TAGDEC'
+    # "Standard-IFT_TAGDEC" : "Standard-IFT_TAGDEC"
+    # "Standard-IFT_TAGETA" : "Standard-IFT_TAGETA"
+    "Standard_IFT_TAGDEC" : "Standard_IFT_TAGDEC"
+    "Standard_IFT_TAGETA" : "Standard_IFT_TAGETA"
+    # 'B_IFT_InclusiveTagger_TAGETA': 'B_IFT_InclusiveTagger_TAGETA'
+
+muonic: &muonic
+  "hlt1b" : "Jpsi_Hlt1DiMuonHighMassDecision_TOS == 0 & (Jpsi_Hlt1TrackMuonDecision_TOS == 1 | B_Hlt1TwoTrackMVADecision_TOS == 1)"
+
+Bu2JpsiKplus: &Bu2JpsiKplus
+  <<: *common
+  <<: *tagging
+  <<: *muonic
+
+MC_Bu2JpsiKplus: &MC_Bu2JpsiKplus
+  <<: *Bu2JpsiKplus
+  'B_BKGCAT': 'B_BKGCAT'
+  # 'B_ID_GenLvl': 'B_ID_GenLvl'
+  'B_TRUEID': 'B_TRUEID'
+
+Bs2DsPi: &Bs2DsPi
+  'time': 'B_LOKI_DTF_CTAU/0.29979245'
+  #To change this variable by the actual B_LOKI_DTF_CTAUERR
+  'sigmat': 'B_TAUERR*1000'
+  'B_PT': 'B_PT'
+  'B_ETA': 'B_LOKI_ETA'
+  'nPVs': 'nPVs'
+  'nTracks': 'nTracks'
+  "B_M" : "B_M"
+  'B_ID': 'B_ID'
+  "MKK" :   'sqrt((Kplus_PE+Kminus_PE)*(Kplus_PE+Kminus_PE)-(Kplus_PX+Kminus_PX)*(Kplus_PX+Kminus_PX)-(Kplus_PY+Kminus_PY)*(Kplus_PY+Kminus_PY)-(Kplus_PZ+Kminus_PZ)*(Kplus_PZ+Kminus_PZ))'
+  "lab13_MM" : 'sqrt((piplus_PE+Kminus_PE)*(piplus_PE+Kminus_PE)-(piplus_PX+Kminus_PX)*(piplus_PX+Kminus_PX)-(piplus_PY+Kminus_PY)*(piplus_PY+Kminus_PY)-(piplus_PZ+Kminus_PZ)*(piplus_PZ+Kminus_PZ))'
+  "MKpibach" : 'sqrt((piplus_PE+Kminus_PE)*(piplus_PE+Kminus_PE)-(piplus_PX+Kminus_PX)*(piplus_PX+Kminus_PX)-(piplus_PY+Kminus_PY)*(piplus_PY+Kminus_PY)-(piplus_PZ+Kminus_PZ)*(piplus_PZ+Kminus_PZ))'
+  'MpiKpi': 'sqrt((sqrt(Kplus_PX*Kplus_PX+Kplus_PY*Kplus_PY+Kplus_PZ*Kplus_PZ+139.571*139.571)+Kminus_PE+piminus_PE)*(sqrt(Kplus_PX*Kplus_PX+Kplus_PY*Kplus_PY+Kplus_PZ*Kplus_PZ+139.571*139.571)+Kminus_PE+piminus_PE)-(Kplus_PX+Kminus_PX+piminus_PX)*(Kplus_PX+Kminus_PX+piminus_PX)-(Kplus_PY+Kminus_PY+piminus_PY)*(Kplus_PY+Kminus_PY+piminus_PY)-(Kplus_PZ+Kminus_PZ+piminus_PZ)*(Kplus_PZ+Kminus_PZ+piminus_PZ))'
+  'MKpipi': 'sqrt((sqrt(Kminus_PX*Kminus_PX+Kminus_PY*Kminus_PY+Kminus_PZ*Kminus_PZ+139.571*139.571)+Kplus_PE+piminus_PE)*(sqrt(Kminus_PX*Kminus_PX+Kminus_PY*Kminus_PY+Kminus_PZ*Kminus_PZ+139.571*139.571)+Kplus_PE+piminus_PE)-(Kplus_PX+Kminus_PX+piminus_PX)*(Kplus_PX+Kminus_PX+piminus_PX)-(Kplus_PY+Kminus_PY+piminus_PY)*(Kplus_PY+Kminus_PY+piminus_PY)-(Kplus_PZ+Kminus_PZ+piminus_PZ)*(Kplus_PZ+Kminus_PZ+piminus_PZ))'
+  'MpKpi': 'sqrt((sqrt(Kplus_PX*Kplus_PX+Kplus_PY*Kplus_PY+Kplus_PZ*Kplus_PZ+938.272*938.272)+Kminus_PE+piminus_PE)*(sqrt(Kplus_PX*Kplus_PX+Kplus_PY*Kplus_PY+Kplus_PZ*Kplus_PZ+938.272*938.272)+Kminus_PE+piminus_PE)-(Kplus_PX+Kminus_PX+piminus_PX)*(Kplus_PX+Kminus_PX+piminus_PX)-(Kplus_PY+Kminus_PY+piminus_PY)*(Kplus_PY+Kminus_PY+piminus_PY)-(Kplus_PZ+Kminus_PZ+piminus_PZ)*(Kplus_PZ+Kminus_PZ+piminus_PZ))'
+  'MKppi': 'sqrt((sqrt(Kminus_PX*Kminus_PX+Kminus_PY*Kminus_PY+Kminus_PZ*Kminus_PZ+938.272*938.272)+Kplus_PE+piminus_PE)*(sqrt(Kminus_PX*Kminus_PX+Kminus_PY*Kminus_PY+Kminus_PZ*Kminus_PZ+938.272*938.272)+Kplus_PE+piminus_PE)-(Kplus_PX+Kminus_PX+piminus_PX)*(Kplus_PX+Kminus_PX+piminus_PX)-(Kplus_PY+Kminus_PY+piminus_PY)*(Kplus_PY+Kminus_PY+piminus_PY)-(Kplus_PZ+Kminus_PZ+piminus_PZ)*(Kplus_PZ+Kminus_PZ+piminus_PZ))'
+
+
+  <<: *tagging
+
+MC_Bs2DsPi: &MC_Bs2DsPi
+  <<: *Bs2DsPi
+  'B_BKGCAT': 'B_BKGCAT'
+  'B_TRUEID': 'B_TRUEID'
+  'B_TRUETAU': 'B_TRUETAU'
+
+Bd2JpsiKstar: &Bd2JpsiKstar
+  #Trigger
+  "B_L0Global_Dec" : "B_L0Global_Dec"
+  "Jpsi_Hlt1DiMuonHighMassDecision_TOS" : "Jpsi_Hlt1DiMuonHighMassDecision_TOS"
+  "Jpsi_Hlt1TrackMuonDecision_TOS" : "Jpsi_Hlt1TrackMuonDecision_TOS"
+  "B_Hlt1TwoTrackMVADecision_TOS" : "B_Hlt1TwoTrackMVADecision_TOS"
+  "Jpsi_Hlt2DiMuonDetachedJPsiDecision_TOS" : "Jpsi_Hlt2DiMuonDetachedJPsiDecision_TOS"
+
+  #We should use the ones that are commented
+  'time': 'B_LOKI_DTF_CTAU/0.29979245'
+  # 'sigmat': 'B_LOKI_DTF_CTAUERR/0.29979245' #Not there :()
+  'sigmat': 'B_TAUERR*1000'
+  "B_ConstJpsi_M" : "B_ConstJpsi_M"
+  "B_LOKI_DTF_CTAU" : "B_LOKI_DTF_CTAU"
+  'B_ID': 'B_ID'
+  'B_OSCharm_TAGDEC': 'B_OSCharm_TAGDEC'
+  'B_OSCharm_TAGETA': 'B_OSCharm_TAGETA'
+  # 'B_OSElectron_TAGDEC': 'B_OSElectron_TAGDEC'
+  # 'B_OSElectron_TAGETA': 'B_OSElectron_TAGETA'
+  'B_OSElectronLatest_TAGDEC': 'B_OSElectronLatest_TAGDEC'
+  'B_OSElectronLatest_TAGETA': 'B_OSElectronLatest_TAGETA'
+  # 'B_OSKaon_TAGDEC': 'B_OSKaon_TAGDEC'
+  # 'B_OSKaon_TAGETA': 'B_OSKaon_TAGETA'
+  'B_OSKaonLatest_TAGDEC': 'B_OSKaonLatest_TAGDEC'
+  'B_OSKaonLatest_TAGETA': 'B_OSKaonLatest_TAGETA'
+  # 'B_OSMuon_TAGDEC': 'B_OSMuon_TAGDEC'
+  # 'B_OSMuon_TAGETA': 'B_OSMuon_TAGETA'
+  'B_OSMuonLatest_TAGDEC': 'B_OSMuonLatest_TAGDEC'
+  'B_OSMuonLatest_TAGETA': 'B_OSMuonLatest_TAGETA'
+  'B_OSVtxCh_TAGDEC': 'B_OSVtxCh_TAGDEC'
+  'B_OSVtxCh_TAGETA': 'B_OSVtxCh_TAGETA'
+
+  #SS
+  # 'B_SSKaon_TAGDEC': 'B_SSKaon_TAGDEC'
+  # 'B_SSKaon_TAGETA': 'B_SSKaon_TAGETA'
+  'B_SSKaonLatest_TAGDEC': 'B_SSKaonLatest_TAGDEC'
+  'B_SSKaonLatest_TAGETA': 'B_SSKaonLatest_TAGETA'
+  'B_SSPion_TAGDEC'   : 'B_SSPion_TAGDEC' 
+  'B_SSProton_TAGDEC' : 'B_SSProton_TAGDEC'
+  'B_SSPion_TAGETA'   : 'B_SSPion_TAGETA' 
+  'B_SSProton_TAGETA' : 'B_SSProton_TAGETA'
+
+  #IFT
+  # 'B_IFT_InclusiveTagger_TAGDEC': 'B_IFT_InclusiveTagger_TAGDEC'
+  "Standard_IFT_TAGDEC" : "Standard_IFT_TAGDEC"
+  "Standard_IFT_TAGETA" : "Standard_IFT_TAGETA"
+  # 'B_IFT_InclusiveTagger_TAGETA': 'B_IFT_InclusiveTagger_TAGETA'
+  <<: *muonic 
+  "B_ConstJpsi_M_1" : "B_M" 
+  'B_PT': 'B_PT'
+  'B_ETA': 'B_LOKI_ETA'
+  'nPVs': 'nPVs'
+  'nTracks': 'nTracks'
+
+MC_Bd2JpsiKstar: &MC_Bd2JpsiKstar
+  # "hlt1b" :  "hlt1b"
+  'time': 'B_LOKI_DTF_CTAU/0.29979245'
+  'sigmat': 'B_TAUERR*1000'
+  # "time" : "time"
+  # "sigmat" : "sigmat"
+  'B_PT': 'B_PT'
+  'B_ETA': 'B_LOKI_ETA'
+  'nPVs': 'nPVs'
+  'nTracks': 'nTracks'
+  'nPVs': 'nPVs'
+  # "B_ConstJpsi_M_1" : "B_ConstJpsi_M_1"
+  "B_ConstJpsi_M" : "B_ConstJpsi_M"
+  'B_BKGCAT': 'B_BKGCAT'
+  # 'B_ID_GenLvl': 'B_ID_GenLvl'
+  'B_TRUEID': 'B_TRUEID'
+  "truetime" : "1000*B_TRUETAU"
+  'B_OSCharm_TAGDEC': 'B_OSCharm_TAGDEC'
+  'B_OSCharm_TAGETA': 'B_OSCharm_TAGETA'
+  'B_OSElectronLatest_TAGDEC': 'B_OSElectronLatest_TAGDEC'
+  'B_OSElectronLatest_TAGETA': 'B_OSElectronLatest_TAGETA'
+  'B_OSKaonLatest_TAGDEC': 'B_OSKaonLatest_TAGDEC'
+  'B_OSKaonLatest_TAGETA': 'B_OSKaonLatest_TAGETA'
+  'B_OSMuonLatest_TAGDEC': 'B_OSMuonLatest_TAGDEC'
+  'B_OSMuonLatest_TAGETA': 'B_OSMuonLatest_TAGETA'
+  'B_OSVtxCh_TAGDEC': 'B_OSVtxCh_TAGDEC'
+  'B_OSVtxCh_TAGETA': 'B_OSVtxCh_TAGETA'
+
+  'B_SSKaonLatest_TAGDEC': 'B_SSKaonLatest_TAGDEC'
+  'B_SSKaonLatest_TAGETA': 'B_SSKaonLatest_TAGETA'
+  'B_SSPion_TAGDEC'   : 'B_SSPion_TAGDEC' 
+  'B_SSProton_TAGDEC' : 'B_SSProton_TAGDEC'
+  'B_SSPion_TAGETA'   : 'B_SSPion_TAGETA' 
+  'B_SSProton_TAGETA' : 'B_SSProton_TAGETA'
+
+  "Standard_IFT_TAGDEC" : "Standard_IFT_TAGDEC"
+  "Standard_IFT_TAGETA" : "Standard_IFT_TAGETA"
+  <<: *muonic 
+
+Bs2DsPi_Prompt: &Bs2DsPi_Prompt
+  #Jordy
+  "B_ConstJpsi_M" : "lab0_MM"
+  "Ds_M" : "lab2_MM"
+  'time': 'lab0_LifetimeFit_ctau0/0.000299792458'
+  'sigmat': 'lab0_LifetimeFit_ctauErr0/0.000299792458'
+  #JpsiPhi
+  # "B_ConstJpsi_M_1" : "B_MM"
+  # "Ds_M" : "Ds_MM"
+  # 'time': 'time'
+  # 'sigmat': 'sigmat'
+  # 'nLong': 'nLongTracks'
+  # 'B_IPCHI2_OWNPV' : 'B_IPCHI2_OWNPV'
+  # 'Pi1_M' : 'sqrt(Pi1_PE*Pi1_PE - Pi1_PX*Pi1_PX - Pi1_PY*Pi1_PY - Pi1_PZ*Pi1_PZ)'
+  # 'Pi2_M' : 'sqrt(Pi2_PE*Pi2_PE - Pi2_PX*Pi2_PX - Pi2_PY*Pi2_PY - Pi2_PZ*Pi2_PZ)'
+  # 'K2_M' : 'sqrt(K2_PE*K2_PE - K2_PX*K2_PX - K2_PY*K2_PY - K2_PZ*K2_PZ)'
+  # 'K1_M' : 'sqrt(K1_PE*K1_PE - K1_PX*K1_PX - K1_PY*K1_PY - K1_PZ*K1_PZ)'
+
+MC_Bs2DsPi_Prompt: &MC_Bs2DsPi_Prompt
+  #Jordy
+  <<: *Bs2DsPi_Prompt
+  "Ds_M" : "lab2_MM"
+  # 'time': 'lab0_LifetimeFit_ctau0/0.299792458'
+  # 'sigmat': 'lab0_LifetimeFit_ctauErr0/0.299792458'
+  'nTracks': 'nTracks'
+  "lab2_TRUEID": "lab2_TRUEID"
+  "lab2_MC_MOTHER_ID" : "lab2_MC_MOTHER_ID"
+  "lab2_MC_GD_MOTHER_ID" : "lab2_MC_GD_MOTHER_ID"
+  "lab3_TRUEID" : "lab3_TRUEID"
+  "lab4_TRUEID" : "lab4_TRUEID"
+  "lab5_TRUEID" : "lab5_TRUEID"
+  "lab3_MC_MOTHER_ID" : "lab3_MC_MOTHER_ID"
+  "lab4_MC_MOTHER_ID" : "lab4_MC_MOTHER_ID"
+  "lab5_MC_MOTHER_ID" : "lab5_MC_MOTHER_ID"
+  "lab3_MC_GD_MOTHER_ID" : "lab3_MC_GD_MOTHER_ID"
+  "lab4_MC_GD_MOTHER_ID" : "lab4_MC_GD_MOTHER_ID"
+  "lab5_MC_GD_MOTHER_ID" : "lab5_MC_GD_MOTHER_ID"
+  # #JpsiPhi
+  # <<: *Bs2DsPi_Prompt
+  # 'Ds_BKGCAT': 'Ds_BKGCAT'
+
+MC_Bs2DsPi_Promptno: &MC_Bs2DsPi_Promptno
+  <<: *Bs2DsPi
+  'time': 'B_LOKI_DTF_CTAU/0.00029979245'
+  #To change this variable by the actual B_LOKI_DTF_CTAUERR
+  'sigmat': 'B_TAUERR*1000000'
+  "Ds_M" : "D_sminus_M"
+  'B_BKGCAT': 'B_BKGCAT'
+  'B_TRUEID': 'B_TRUEID'
+  'B_TRUETAU': 'B_TRUETAU'
+  'truetime': '1000000*B_TRUETAU'
+
+MC_Bs2JpsiPhi: &MC_Bs2JpsiPhi
+  'B_PT': 'B_PT'
+  'B_ETA': 'B_LOKI_ETA'
+  'nPVs': 'nPVs'
+  'nTracks': 'nTracks'
+  'B_BKGCAT': 'B_BKGCAT'
+  'B_TRUEID': 'B_TRUEID'
+  #OS
+  'B_OSCharm_TAGDEC': 'B_OSCharm_TAGDEC'
+  'B_OSCharm_TAGETA': 'B_OSCharm_TAGETA'
+  'B_OSElectronLatest_TAGDEC': 'B_OSElectronLatest_TAGDEC'
+  'B_OSElectronLatest_TAGETA': 'B_OSElectronLatest_TAGETA'
+  'B_OSKaonLatest_TAGDEC': 'B_OSKaonLatest_TAGDEC'
+  'B_OSKaonLatest_TAGETA': 'B_OSKaonLatest_TAGETA'
+  'B_OSMuonLatest_TAGDEC': 'B_OSMuonLatest_TAGDEC'
+  'B_OSMuonLatest_TAGETA': 'B_OSMuonLatest_TAGETA'
+  'B_OSVtxCh_TAGDEC': 'B_OSVtxCh_TAGDEC'
+  'B_OSVtxCh_TAGETA': 'B_OSVtxCh_TAGETA'
+
+   #SS
+  'B_SSKaon_TAGDEC': 'B_SSKaon_TAGDEC'
+  'B_SSKaon_TAGETA': 'B_SSKaon_TAGETA'
+
+  #IFT
+  'B_IFT_InclusiveTagger_TAGDEC': 'B_IFT_InclusiveTagger_TAGDEC'
+  'B_IFT_InclusiveTagger_TAGETA': 'B_IFT_InclusiveTagger_TAGETA'

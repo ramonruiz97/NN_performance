@@ -1,0 +1,141 @@
+common: &common
+    'LO_cuts' : "B_L0Global_Dec"
+    'B_cuts': 'B_ConstJpsi_M > 5200. & B_ConstJpsi_M < 5550.'
+    'phi_cuts': 'X_M > 990. & X_M < 1050.'
+    'B_TAU_cuts': '(B_LOKI_DTF_CTAUERR/0.29979245 < 0.15) & (B_LOKI_DTF_CTAU/0.29979245 > 0.3 & B_LOKI_DTF_CTAU/0.29979245 < 15.)'
+    'HLT1_cuts': 'Jpsi_Hlt1DiMuonHighMassDecision_TOS | Jpsi_Hlt1TrackMuonDecision_TOS | B_Hlt1TwoTrackMVADecision_TOS'
+    'HLT2_cuts': 'Jpsi_Hlt2DiMuonDetachedJPsiDecision_TOS'
+    'Lambda_b_veto': '!(((Kplus_ProbNNp > 0.7) & (Kplus_ProbNNp > Kminus_ProbNNp) & (abs(B_pKMuMuKplus_M_1 - 5619.51) < 15.)) | ((Kminus_ProbNNp > 0.7) & (Kminus_ProbNNp > Kplus_ProbNNp) & (abs(B_pKMuMuKminus_M_1 - 5619.51) < 15.)))'
+    'Bd_veto': '!(((Kplus_ProbNNk < 0.35 | Kplus_ProbNNpi > 0.7) & (Kplus_ProbNNpi > Kminus_ProbNNpi) & (abs(B_B2KpPiJpsi_M_1 - 5279.63) < 15.)) | ((Kminus_ProbNNk < 0.35 | Kminus_ProbNNpi > 0.7) & (Kminus_ProbNNpi > Kplus_ProbNNpi) & (abs(B_B2KmPiJpsi_M_1 - 5279.63) < 15.)))'
+
+
+Bu2JpsiKplus: &Bu2JpsiKplus
+    <<: *common
+    'B_cuts': 'B_ConstJpsi_M > 5210. & B_ConstJpsi_M < 5350.'
+    'phi_cuts': ''
+    'Lambda_b_veto': ''
+    'Bd_veto': ''
+    'B_TAU_cuts': '(B_LOKI_DTF_CTAU/0.29979245 > 0.3 & B_LOKI_DTF_CTAU/0.29979245 < 15.)'
+
+MC_Bu2JpsiKplus: &MC_Bu2JpsiKplus
+    <<: *Bu2JpsiKplus
+    # 'MC_specific': 'B_BKGCAT == 0 | B_BKGCAT == 10 | (B_BKGCAT == 50 & B_TRUETAU > 0) | B_BKGCAT == 60'
+    'MC_specific': 'B_BKGCAT == 0 | B_BKGCAT == 10 | (B_BKGCAT == 50) | B_BKGCAT == 60'
+
+Bd2JpsiKstar: &Bd2JpsiKstar
+    <<: *common
+    #Old to avoid boundary effects:
+    # 'B_cuts': 'B_ConstJpsi_M > 5150. & B_ConstJpsi_M < 5450.'
+    'B_cuts': 'B_ConstJpsi_M > 5170. & B_ConstJpsi_M < 5420.'
+    'phi_cuts': ''
+    'B_TAU_cuts': '(sigmat<0.15) & (B_LOKI_DTF_CTAU/0.29979245 > 0.3 & B_LOKI_DTF_CTAU/0.29979245 < 15.)'
+    'pion_cuts': '(piminus_PT > 250.) & (piminus_PIDK < 0. & piminus_PIDK != -1000.)'
+    'Lambda_b_veto': 'piminus_ProbNNp < 0.9'
+    'Bd_veto': 'piminus_ProbNNk < 0.9'
+
+
+
+MC_Bd2JpsiKstar: &MC_Bd2JpsiKstar
+    <<: *Bd2JpsiKstar
+    # 'B_cuts': 'B_ConstJpsi_M > 5150. & B_ConstJpsi_M < 5450.'
+    # 'phi_cuts': ''
+    # 'pion_cuts': '(piminus_PT > 250.) & (piminus_PIDK < 0. & piminus_PIDK != -1000.)'
+    # 'Lambda_b_veto': 'piminus_ProbNNp < 0.9'
+    # 'Bd_veto': 'piminus_ProbNNk < 0.9'
+    # 'B_TAU_cuts': '(sigmat < 0.15) & (B_LOKI_DTF_CTAU/0.29979245 > 0.3 & B_LOKI_DTF_CTAU/0.29979245 < 15.)'
+    'MC_specific': 'B_BKGCAT == 0 | B_BKGCAT == 10 | (B_BKGCAT == 50 & B_TRUETAU > 0) | B_BKGCAT == 60'
+
+
+Bs2DsPi_Prompt: &Bs2DsPi_Prompt
+    #Jordy  no selection + Kechen selection (wo cut in Bs 5000 and 7000)
+    # 'LO_cuts'    : "B_L0Global_Dec"
+    # 'HLT1_cuts'  : 'B_Hlt1TrackMVADecision_TOS | B_Hlt1TwoTrackMVADecision_TOS'
+    # 'Pi1_cuts'   : 'lab5_PIDK < 8. & lab5_IPCHI2_OWNPV>9.'
+    # 'Pi2_cuts'   : 'lab1_PIDK < 0. & lab1_isMuon == 0' #Bachelor pion no requirement lifetime biasing
+    # 'K1_cuts'    : 'lab3_PIDK > 5. & lab3_IPCHI2_OWNPV>9.'
+    # 'K2_cuts'    : 'lab4_PIDK > 5. & lab4_IPCHI2_OWNPV>9.'
+    'Ds_cuts'    : 'lab2_MM < 2003  & lab2_MM > 1933'   #Ds no IP requirement lifetime biasing
+    # #The reason why between 5000 and 7000 is because of stripping -> bachelor
+    # #assumed to be a kaon -> check miscelaneous mother_prompt
+    # 'Bs_cuts'    : 'lab0_MM < 7000 & lab0_MM > 5000'
+    # 'Phi_cuts'   : 'lab34_MM<1040 & lab34_MM>1000'
+    # #Vetoes
+    # 'd0_veto'    : '(lab34_MM < 1840) & abs(lab13_MM - 1864.83) > 30'
+    # 'dplus_veto' : '((abs(lab2_MassHypo_KKPi_D - 1869.6) > 30.) | (lab3_PIDK > 10.))'
+    # 'lc_veto'    : '((abs(lab2_MassHypo_KKPi_Lambda - 2286.4) > 30.) | ((lab3_PIDK - lab3_PIDp) > 5.))'
+
+    #Just trying with Jordy selection to avoid loosing events in MC prompt for
+    #rations
+    'Bs_cuts'    : 'lab0_MM < 7000 & lab0_MM > 5000'
+
+
+Bs2DsPi: &Bs2DsPi
+    # Trigger
+    'LO_cuts': "B_L0Global_Dec"
+    'B_TAU_cuts': 'B_LOKI_DTF_CTAU/0.29979245 > 0.3 & B_LOKI_DTF_CTAU/0.29979245 < 14.'
+    'HLT1_cuts': 'B_Hlt1TrackMVADecision_TOS | B_Hlt1TwoTrackMVADecision_TOS'
+    #TODO: Add this variables
+    # 'HLT2_cuts': 'B_Hlt2Topo2BodyDecision_TOS|B_Hlt2Topo3BodyDecision_TOS|B_Hlt2Topo4BodyDecision_TOS'
+    'Ds_cuts': 'D_sminus_MM < 2003 & D_sminus_MM > 1933 & D_sminus_IPCHI2_OWNPV > 4. '
+    #Here well reconstructed one should maintiain 5000-6000
+    #To test
+    'B_cuts': 'B_M > 5000. & B_M < 6000. & B_DIRA_OWNPV>0.999 & B_IPCHI2_OWNPV<16.'
+    #Bachelor pi (p and Pt from Stripping also in prompt)
+    'piplus_cuts': 'piplus_P>2000. & piplus_PT>400 & piplus_IPCHI2_OWNPV>36. & piplus_PIDK < 0. & piplus_isMuon == 0 '
+    #Pi from Ds
+    'piminus_cuts': 'piminus_PIDK < 8. & piminus_IPCHI2_OWNPV>9. '
+    #KK from Ds
+    'K_cuts': 'Kplus_PIDK > 5. & Kplus_IPCHI2_OWNPV>9. & Kminus_PIDK > 5. & Kminus_IPCHI2_OWNPV>9.'
+    'veto_D0' : "MKK < 1840 & abs(lab13_MM - 1864.83) > 30" 
+    'veto_K1': 'Kplus_PIDK > 10. | MpiKpi < 1840. | MpiKpi > 1900.'
+    'veto_K2': 'Kminus_PIDK > 10. | MKpipi < 1840. | MKpipi > 1900.'
+    'veto_K1_p': '(Kplus_PIDK-Kplus_PIDp) > 5. | MpKpi < 2256.4 | MpKpi > 2316.4'
+    'veto_K2_p': '(Kminus_PIDK-Kminus_PIDp) > 5. | MKppi < 2256.4 | MKppi > 2316.4'
+
+MC_Bs2DsPi: &MC_Bs2DsPi
+    <<: *Bs2DsPi
+    'MC_specific': 'B_BKGCAT <= 30 | (B_BKGCAT == 50)'
+
+
+
+
+MC_Bs2DsPi_Prompt: &MC_Bs2DsPi_Prompt
+    <<: *Bs2DsPi_Prompt
+    # Jordy  no selection + Kechen selection (wo cut in Bs 5000 and 7000)
+    # 'LO_cuts'    : "B_L0Global_Dec"
+    # 'HLT1_cuts'  : 'B_Hlt1TrackMVADecision_TOS | B_Hlt1TwoTrackMVADecision_TOS'
+    # 'Pi1_cuts'   : 'lab5_PIDK < 8. & lab5_IPCHI2_OWNPV>9.'
+    # 'Pi2_cuts'   : 'lab1_PIDK < 0. & lab1_isMuon == 0' #Bachelor pion no requirement lifetime biasing
+    # 'K1_cuts'    : 'lab3_PIDK > 5. & lab3_IPCHI2_OWNPV>9.'
+    # 'K2_cuts'    : 'lab4_PIDK > 5. & lab4_IPCHI2_OWNPV>9.'
+    'Ds_cuts'    : 'lab2_MM < 2003  & lab2_MM > 1933'   #Ds no IP requirement lifetime biasing
+    # # The reason why between 5000 and 7000 is because of stripping -> bachelor
+    # # assumed to be a kaon -> check miscelaneous mother_prompt
+    # 'Bs_cuts'    : 'lab0_MM < 7000 & lab0_MM > 5000'
+    # 'Phi_cuts'   : 'lab34_MM<1040 & lab34_MM>1000'
+    # # Vetoes
+    # 'd0_veto'    : '(lab34_MM < 1840) & abs(lab13_MM - 1864.83) > 30'
+    # 'dplus_veto' : '((abs(lab2_MassHypo_KKPi_D - 1869.6) > 30.) | (lab3_PIDK > 10.))'
+    # 'lc_veto'    : '((abs(lab2_MassHypo_KKPi_Lambda - 2286.4) > 30.) | ((lab3_PIDK - lab3_PIDp) > 5.))'
+    #Jordy tuple instead of Ds_BKGCAT there is some MC truth
+    # 'MC_specific': '(Ds_BKGCAT<30 | Ds_BKGCAT==50)'
+    'Bs_cuts'    : 'lab0_MM < 7000 & lab0_MM > 5000'
+
+
+
+MC_Bs2DsPi_Promptno: &MC_Bs2DsPi_Promptno
+    <<: *Bs2DsPi
+    'MC_specific': 'B_BKGCAT <= 30 | (B_BKGCAT == 50)'
+
+Bs2JpsiPhi: &Bs2JpsiPhi
+  'L0_cuts': 'B_L0Global_Dec'
+  'B_cuts': 'B_ConstJpsi_M_1 > 5250. & B_ConstJpsi_M_1 < 5450.'
+  'phi_cuts': 'X_M > 990. & X_M < 1050.'
+  'B_TAU_cuts': '(B_LOKI_DTF_CTAUERR/0.29979245 < 0.15) & (B_LOKI_DTF_CTAU/0.29979245 > 0.3 & B_LOKI_DTF_CTAU/0.29979245 < 15.)'
+  'HLT1_cuts': 'Jpsi_Hlt1DiMuonHighMassDecision_TOS | Jpsi_Hlt1TrackMuonDecision_TOS | B_Hlt1TwoTrackMVADecision_TOS'
+  'HLT2_cuts': 'Jpsi_Hlt2DiMuonDetachedJPsiDecision_TOS'
+
+MC_Bs2JpsiPhi: &MC_Bs2JpsiPhi
+    <<: *Bs2JpsiPhi
+    'MC_specific': 'B_BKGCAT == 0 | B_BKGCAT == 10 | (B_BKGCAT == 50 & B_TRUETAU > 0)'
+

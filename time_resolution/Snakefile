@@ -1,0 +1,250 @@
+##############################################
+#    Author Ramon Angel Ruiz Fernandez       #
+##############################################
+
+#This file will be formed by two rules, 
+#one for calculating the \sigma_eff of a given deacy-time errob bin
+#The next one will take all the bins and do a linear calibration to get
+#p0 and p1 for a given year
+
+rule time_resolution_unbinned:
+    #TODO Probably here i can use MC prompt :)
+    threads: 12
+    resources:
+      mem_mb=6000
+    wildcard_constraints:
+      mode = "(MC_)?Bs2DsPi(_Prompt)?", 
+      year = "20(1516|15|16|17|18)",
+      binvar = "full",
+      version = "v(\d)r(\d)(p\d)?",
+    input:
+      root = TUPLES+"/{year}/{mode}/{version}_{binvar}_sweighted.root",
+    output:
+      params = "output/params/time_res_unbinned/{year}/{mode}/{version}_{binvar}.json",
+      figures = directory("output/figures/time_res_unbinned/{year}/{mode}/{version}_{binvar}/")
+    log:
+      "output/log/time_res_unbinned/{year}/{mode}/{version}_{binvar}.log"
+    run:
+      shell(f"""(time\
+            python time_resolution/time_fit_unbined.py \
+            --data {input.root}\
+            --weight sigDsSW\
+            --bin {wildcards.binvar}\
+            --year {wildcards.year}\
+            --version {wildcards.version}\
+            --output-json {output.params}\
+            --output-plots {output.figures}\
+          ) &> {log}""")
+
+
+rule time_resolution_fit:
+    """
+    This rulue does a decay time fit to Prompt samples that should in principle
+    be centered around 0, to extract the decay-time resolution
+    The likelihood fitted is double gaussian (shared mean) + WPV + Real Decays
+    Following the model of B to Open Charm analysis.
+    """
+    threads: 12
+    resources:
+      mem_mb=6000
+    wildcard_constraints:
+      mode = "Bs2DsPi(_Prompt)?(no)?", 
+      #If prompt not included one should t_reco - t_true
+      year = "20(1516|15|16|17|18)",
+      binvar = "sigmat(\d{1})?",
+      version = "v(\d)r(\d)(p\d)?",
+    input:
+      root = TUPLES+"/{year}/{mode}/{version}_{binvar}_sweighted.root",
+    output:
+      params = "output/params/time_res_fit/{year}/{mode}/{version}_{binvar}.json",
+      figures = directory("output/figures/time_res_fit/{year}/{mode}/{version}_{binvar}/")
+    log:
+      "output/log/time_res_fit/{year}/{mode}/{version}_{binvar}.log"
+    run:
+      shell(f"""(time\
+            python time_resolution/time_fit.py \
+            --data {input.root}\
+            --weight sigDsSW\
+            --bin {wildcards.binvar}\
+            --year {wildcards.year}\
+            --mode {wildcards.mode}\
+            --version {wildcards.version}\
+            --output-json {output.params}\
+            --output-plots {output.figures}\
+          ) &> {log}""")
+
+rule time_resolution_MC:
+    """
+    This rulue does a decay time fit to Prompt samples that should in principle
+    be centered around 0, to extract the decay-time resolution
+    The likelihood fitted is double gaussian (shared mean) + WPV + Real Decays
+    Following the model of B to Open Charm analysis.
+    """
+    threads: 12
+    resources:
+      mem_mb=6000
+    wildcard_constraints:
+      mode = "(MC_)Bs2DsPi(_Prompt)?(no)?", 
+      #If prompt not included one should t_reco - t_true
+      year = "20(1516|16|17|18)",
+      binvar = "(full|sigmat(\d{1})?)",
+      version = "v(\d)r(\d)(p\d)?",
+    input:
+      root = TUPLES+"/{year}/{mode}/{version}_{binvar}_selected.root",
+    output:
+      params = "output/params/time_res_fit/{year}/{mode}/{version}_{binvar}.json",
+      figures = directory("output/figures/time_res_fit/{year}/{mode}/{version}_{binvar}/")
+    log:
+      "output/log/time_res_fit/{year}/{mode}/{version}_{binvar}.log"
+    run:
+      shell(f"""(time\
+            python time_resolution/time_fit.py \
+            --data {input.root}\
+            --weight time/time\
+            --bin {wildcards.binvar}\
+            --year {wildcards.year}\
+            --mode {wildcards.mode}\
+            --version {wildcards.version}\
+            --output-json {output.params}\
+            --output-plots {output.figures}\
+          ) &> {log}""")
+
+rule time_resolution_fit_Bd:
+    """
+    This rulue does a decay time fit to Prompt samples that should in principle
+    be centered around 0, to extract the decay-time resolution
+    The likelihood fitted is double gaussian (shared mean) + WPV + Real Decays
+    Following the model of B to Open Charm analysis.
+    """
+    threads: 4
+    resources:
+      mem_mb=6000
+    wildcard_constraints:
+      mode = "(MC_)?(Bd2JpsiKstar|Bs2JpsiPhi)(_Prompt)?", 
+      #If prompt not included one should t_reco - t_true
+      year = "20(1516|15|16|17|18)",
+      binvar = "sigmat(\d{1})?",
+      version = "v(\d)r(\d)(p\d)?",
+    input:
+      root = TUPLES+"/{year}/{mode}/{version}_{binvar}_selected.root",
+    params:
+        weight = lambda wcs: expand("{weight}",
+                        weight = "sigBdSW" if "MC" not in wcs.mode else "time/time")
+    output:
+      params = "output/params/time_res_fit/{year}/{mode}/{version}_{binvar}.json",
+      figures = directory("output/figures/time_res_fit/{year}/{mode}/{version}_{binvar}/")
+
+
+    log:
+      "output/log/time_res_fit/{year}/{mode}/{version}_{binvar}.log"
+    run:
+      shell(f"""(time\
+            python time_resolution/time_fit_Bd.py \
+            --data {input.root}\
+            --weight {params.weight}\
+            --bin {wildcards.binvar}\
+            --year {wildcards.year}\
+            --mode {wildcards.mode}\
+            --version {wildcards.version}\
+            --output-json {output.params}\
+            --output-plots {output.figures}\
+          ) &> {log}""")
+
+
+rule calibration:
+    """
+    Linear fit: sigma_average vs sigma_eff (from delution)
+    """
+    threads: 12
+    resources:
+      mem_mb=6000
+    wildcard_constraints:
+      mode = "(Bs2DsPi_Prompt|MC_Bd2JpsiKstar)", 
+      year = "20(1516|15|16|17|18)",
+      binvar = "sigmat(\d{1})?",
+      version = "v(\d)r(\d)(p\d)?",
+    input:
+      files = lambda wcs : expand(TUPLES+"/{year}/{mode}/{version}_sigmat{nbin}_{type}.root",
+                      year=wcs.year,
+                      mode=wcs.mode,
+                      version=wcs.version,
+                      type="sweighted" if "Bs" in wcs.mode else "selected",
+                      nbin=range(0,10) ),#if "DsPi" in wcs.mode else range(0,7)),
+
+      params = lambda wcs : expand("output/params/time_res_fit/{year}/{mode}/{version}_sigmat{nbin}.json",
+                      year=wcs.year,
+                      mode=wcs.mode,
+                      version=wcs.version,
+                      nbin=range(0,10) ),#if "DsPi" in wcs.mode else range(0,7)),
+    output:
+      params = "output/params/time_res_fit/{year}/{mode}/{version}.json",
+      figures = directory("output/figures/time_res_fit/{year}/{mode}/{version}")
+    log:
+      "output/log/time_res_fit/{year}/{mode}/{version}.log",
+    run:
+      shell(f"""(time\
+        python time_resolution/calibration.py\
+              --data {",".join(input.files)}\
+              --mode {wildcards.mode}\
+              --year {wildcards.year}\
+              --json-bin {",".join(input.params)}\
+              --output-json {output.params}\
+              --output-plots {output.figures}\
+            ) &> {log}""") 
+
+rule calibration_scaled:
+    """
+    Linear fit: sigma_average vs sigma_eff (from delution)
+    """
+    threads: 12
+    resources:
+      mem_mb=6000
+    wildcard_constraints:
+      mode = "(Bs2DsPi_Prompt)", 
+      year = "20(1516|15|16|17|18)",
+      binvar = "sigmat(\d{1})?",
+      version = "v(\d)r(\d)(p\d)?",
+    input:
+      files = lambda wcs : expand(TUPLES+"/{year}/{mode}/{version}_sigmat{nbin}_sweighted.root",
+                      year=wcs.year,
+                      mode=wcs.mode,
+                      version=wcs.version,
+                      nbin=range(0,10)),
+
+      params = lambda wcs : expand("output/params/time_res_fit/{year}/{mode}/{version}_sigmat{nbin}.json",
+                      year=wcs.year,
+                      mode=wcs.mode,
+                      version=wcs.version,
+                      nbin=range(0,10)),
+
+      mcsignal_params = lambda wcs : expand("output/params/time_res_fit/{year}/MC_Bs2DsPi_Promptno/{version}_sigmat{nbin}.json",
+                      year = wcs.year,
+                      mode = wcs.mode,
+                      version = wcs.version,
+                      nbin = range(0,10)),
+
+      mcprompt_params = lambda wcs : expand("output/params/time_res_fit/{year}/MC_Bs2DsPi_Prompt/{version}_sigmat{nbin}.json",
+                      year = "2017" if wcs.year == "2018" else wcs.year,
+                      mode = wcs.mode,
+                      version = wcs.version,
+                      nbin = range(0,10)),
+
+    output:
+      params = "output/params/time_res_fit_scaled/{year}/{mode}/{version}.json",
+      figures = directory("output/figures/time_res_fit_scaled/{year}/{mode}/{version}")
+    log:
+      "output/log/time_res_fit_scaled/{year}/{mode}/{version}.log",
+    run:
+      shell(f"""(time\
+        python time_resolution/calibration_scaled.py\
+              --data {",".join(input.files)}\
+              --mode {wildcards.mode}\
+              --year {wildcards.year}\
+              --json-bin {",".join(input.params)}\
+              --json-mcsig {",".join(input.mcsignal_params)}\
+              --json-mcprompt {",".join(input.mcprompt_params)}\
+              --output-json {output.params}\
+              --output-plots {output.figures}\
+            ) &> {log}""")
+
+

@@ -1,0 +1,878 @@
+__author__ = ["Ramón Ángel Ruiz Fernández"]
+__email__ = ["rruizfer@cern.ch"]
+
+
+with open('config/tagger.yml') as conf:
+    conf_tag = yaml.load(conf, Loader=yaml.FullLoader)
+
+def rootfile_selected(wildcards):
+    if "MC" in wildcards.mode:
+        path = TUPLES+"/{year}/{mode}/{version}_{binvar}_selected.root"
+    else:
+        path = TUPLES+"/{year}/{mode}/{version}_{binvar}_sweighted.root"
+    return path
+
+rule Bu_calibration_individuals:
+  wildcard_constraints:
+    mode = "(MC_Bu2JpsiKplus|Bu2JpsiKplus|MC_Bs2DsPi|MC_Bd2JpsiKstar|MC_Bs2JpsiPhi)",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(p\d)?",
+    tagger = "(OSKaonLatest|OSMuonLatest|OSElectronLatest|OSCharm|OSVtxCh|SSKaonLatest|SSPion|SSProton|SSKaon)",
+  input:
+    # root = TUPLES+"/{year}/{mode}/{version}_{binvar}_sweighted.root",
+    root = rootfile_selected,
+    # root = lambda wcs: expand(TUPLES+"/{year}/{mode}/{version}_{binvar}_{stage}.root",
+    #                             year = wcs.year,
+    #                             mode = wcs.mode,
+    #                             version = wcs.version,
+    #                             binvar = wcs.binvar,
+    #                             stage = "selected" if "MC" in wcs.mode else "sweighted"),
+  output:
+    params = "output/params/Bu_calibration/{year}/{mode}/{version}_{binvar}_{tagger}.json",
+    plots = directory("output/figures/Bu_calibration/{year}/{mode}/{version}_{binvar}_{tagger}"),
+  log:
+    "output/log/Bu_calibration/{year}/{mode}/{version}_{binvar}_{tagger}.log",
+  run:
+    shell(f"""(time\
+        python tagging/bu_calibration.py\
+            --data {input.root}\
+            --weight sigBuSW\
+            --tagger {wildcards.tagger}\
+            --mode {wildcards.mode}\
+            --model linear\
+            --output-json {output.params}\
+            --output-plots {output.plots}\
+            ) &> {log}""")
+
+
+
+#FIX me this should be valid also for Bs2DsPi
+rule tagger_Combination_Bu:
+  wildcard_constraints:
+    # mode = "(MC_)?(Bu2JpsiKplus)",
+    mode = "(MC_Bu2JpsiKplus|Bu2JpsiKplus|MC_Bs2DsPi|MC_Bs2JpsiPhi|MC_Bd2JpsiKstar)",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(p\d)?",
+  input:
+    # root = TUPLES+"/{year}/{mode}/{version}_{binvar}_sweighted.root",
+    root = rootfile_selected,
+    # root = lambda wcs: expand(TUPLES+"/{year}/{mode}/{version}_{binvar}_{stage}.root",
+    #                             year = wcs.year,
+    #                             mode = wcs.mode,
+    #                             version = wcs.version,
+    #                             binvar = wcs.binvar,
+    #                             stage = "selected" if "MC" in wcs.mode else "sweighted")
+    #In case we need to calibrate each OS tagger and then merge
+    os_calib = lambda wcs: expand(
+                                "output/params/Bu_calibration/{year}/{mode}/{version}_{binvar}_{tagger}.json",
+                                year = wcs.year,
+                                mode = wcs.mode,
+                                version = wcs.version,
+                                binvar = wcs.binvar,
+                                tagger = conf_tag["list_OSComb"][wcs.mode]["taggers"]
+    ),
+    ss_calib = lambda wcs: expand(
+                                "output/params/Bu_calibration/{year}/{mode}/{version}_{binvar}_{tagger}.json",
+                                year = wcs.year,
+                                mode = wcs.mode,
+                                version = wcs.version,
+                                binvar = wcs.binvar,
+                                #This is only valid for Bu play with a config file
+                                # tagger = ["SSKaonLatest", "SSProton", "SSpion"]
+                                tagger = conf_tag["list_SSComb"][wcs.mode]["taggers"]
+    ),
+             
+  output:
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_combined.root",
+  log:
+    "output/log/{year}/{mode}/{version}_{binvar}_combined.log",
+  run:
+    shell(f"""(time\
+        python tagging/combination.py\
+            --data {input.root}\
+            --version {wildcards.version}\
+            --mode {wildcards.mode}\
+            --output-sample {output.root}\
+            --os_calibration {",".join(input.os_calib)}\
+            --ss_calibration {",".join(input.ss_calib)}\
+            ) &> {log}""") 
+
+#FIX me: TODO-also calibration for each individual
+rule tagger_Combination_neutral:
+  wildcard_constraints:
+    mode = "(Bs2DsPi|Bd2JpsiKstar)",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(p\d)?",
+  input:
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_sweighted.root",
+             
+  output:
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_combined.root",
+  log:
+    "output/log/{year}/{mode}/{version}_{binvar}_combined.log",
+  run:
+    shell(f"""(time\
+        python tagging/combination.py\
+            --data {input.root}\
+            --version {wildcards.version}\
+            --mode {wildcards.mode}\
+            --output-sample {output.root}\
+            ) &> {log}""") 
+
+#Maybe change the name as maybe other modes could enter here also -> all MCs (?)
+rule Bu_calibration:
+  wildcard_constraints:
+    # mode = "(MC_)?Bu2JpsiKplus",
+    mode = "(MC_Bu2JpsiKplus|Bu2JpsiKplus|MC_Bs2DsPi|MC_Bd2JpsiKstar|MC_Bs2JpsiPhi)",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(p\d)?",
+    tagger = "(OSCombination|SSCombination)",
+  input:
+    #TODO: Fix combined could be missunderstood with trigger and not w/ OScombined
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_combined.root",
+  output:
+    params = "output/params/Bu_calibration/{year}/{mode}/{version}_{binvar}_{tagger}_nobias.json",
+    plots = directory("output/figures/Bu_calibration/{year}/{mode}/{version}_{binvar}_{tagger}_nobias"),
+  log:
+    "output/log/Bu_calibration/{year}/{mode}/{version}_{binvar}_{tagger}_nobias.log",
+  run:
+    shell(f"""(time\
+        python tagging/bu_calibration.py\
+            --data {input.root}\
+            --weight sigBuSW\
+            --tagger {wildcards.tagger}\
+            --mode {wildcards.mode}\
+            --year {wildcards.year}\
+            --model linear\
+            --output-json {output.params}\
+            --output-plots {output.plots}\
+            ) &> {log}""")
+
+rule neutral_calibration:
+  threads: 6
+  resources:
+    mem_mb=6000
+  wildcard_constraints:
+    mode = "(Bs2DsPi|Bd2JpsiKstar)",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(p\d)?",
+    tagger = "(OSCombination|SSCombination)",
+    offset = "(nobias|biasDsPi|biasJpsiPhi)"
+  input:
+    #TODO: Fix combined could be missunderstood with trigger and not w/ OScombined
+    #TODO: Checking if v1r0 (JpsiPhi selection) affects main result
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_combined.root",
+    timeres_params =lambda wcs: expand("output/params/time_res_{type}/{year}/{mode}/{version}.json",
+                                year = wcs.year,
+                                mode = "Bs2DsPi_Prompt" if "Bs" in wcs.mode else "MC_Bd2JpsiKstar",
+                                # version = "v1r0"),
+                                type = "fit_scaled" if "Bs" in wcs.mode else "fit",
+                                version = "v2r0" if "Bs" in wcs.mode else "v1r0"),
+    timebias_params = "output/params/time_params/{year}/{mode}/time_pars_{offset}.json",
+    # script = lambda wcs: expand("tagging/{script}" ,
+    #                             script = "dt_fit.py" if "Bs" in wcs.mode else "dt_fit_bd.py"),
+    script = "tagging/dt_fit.py"
+  output:
+    params = "output/params/neutral_calibration/{year}/{mode}/{version}_{binvar}_{tagger}_{offset}.json",
+    plots = directory("output/figures/neutral_calibration/{year}/{mode}/{version}_{binvar}_{tagger}_{offset}"),
+  log:
+    "output/log/neutral_calibration/{year}/{mode}/{version}_{binvar}_{tagger}_{offset}.log",
+  run:
+    shell(f"""(time\
+        python {input.script}\
+            --data {input.root}\
+            --weight sigBsSW\
+            --tagger {wildcards.tagger}\
+            --offset {wildcards.offset}\
+            --time-res {input.timeres_params}\
+            --time-bias {input.timebias_params}\
+            --mode {wildcards.mode}\
+            --year {wildcards.year}\
+            --version {wildcards.version}\
+            --model linear\
+            --output-json {output.params}\
+            --output-plots {output.plots}\
+            ) &> {log}""")
+
+rule neutral_calibration_wouter:
+  threads: 6
+  resources:
+    mem_mb=6000
+  wildcard_constraints:
+    mode = "(Bs2DsPi|Bd2JpsiKstar)",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(p\d)?",
+    tagger = "(OSCombination|SSCombination)",
+    offset = "(nobias|biasDsPi|biasJpsiPhi)"
+  input:
+    #TODO: Fix combined could be missunderstood with trigger and not w/ OScombined
+    #TODO: Checking if v1r0 (JpsiPhi selection) affects main result
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_combined.root",
+    timeres_params =lambda wcs: expand("output/params/time_res_{type}/{year}/{mode}/{version}.json",
+                                year = wcs.year,
+                                mode = "Bs2DsPi_Prompt" if "Bs" in wcs.mode else "MC_Bd2JpsiKstar",
+                                # version = "v1r0"),
+                                type = "fit_scaled" if "Bs" in wcs.mode else "fit",
+                                version = "v2r0" if "Bs" in wcs.mode else "v1r0"),
+    timebias_params = "output/params/time_params/{year}/{mode}/time_pars_{offset}.json"
+  output:
+    params = "output/params/neutral_calibration_wouter/{year}/{mode}/{version}_{binvar}_{tagger}_{offset}.json",
+    plots = directory("output/figures/neutral_calibration_wouter/{year}/{mode}/{version}_{binvar}_{tagger}_{offset}"),
+  log:
+    "output/log/neutral_calibration_wouter/{year}/{mode}/{version}_{binvar}_{tagger}_{offset}.log",
+  run:
+    shell(f"""(time\
+        python tagging/dt_fit_wouter.py\
+            --data {input.root}\
+            --weight sigBsSW\
+            --tagger {wildcards.tagger}\
+            --offset {wildcards.offset}\
+            --time-res {input.timeres_params}\
+            --time-bias {input.timebias_params}\
+            --mode {wildcards.mode}\
+            --year {wildcards.year}\
+            --version {wildcards.version}\
+            --model linear\
+            --output-json {output.params}\
+            --output-plots {output.plots}\
+            ) &> {log}""")
+
+
+#This rule combines OSCombination and SSCombination and creates a new branch ->Combination
+rule final_Combination:
+  wildcard_constraints:
+    mode = "(MC_)?(Bu2JpsiKplus|Bs2DsPi|Bd2JpsiKstar|Bs2JpsiPhi)",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(p\d)?",
+    offset = "(nobias|biasJpsiPhi|biasDsPi)",
+  input:
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_combined.root",
+    #In case we need to calibrate each OS tagger and then merge
+    os_calib = lambda wcs: expand(
+              "output/params/{type}_calibration/{year}/{mode}/{version}_{binvar}_OSCombination_{offset}.json",
+               type = "Bu" if "Bu" in wcs.mode.replace("MC", "Bu") else "neutral",
+               year = wcs.year,
+               mode = wcs.mode,
+               version = wcs.version,
+               binvar = wcs.binvar,
+               offset = wcs.offset
+               ),
+
+    ss_calib = lambda wcs: expand(
+             "output/params/{type}_calibration/{year}/{mode}/{version}_{binvar}_SSCombination_{offset}.json",
+               type = "Bu" if "Bu" in wcs.mode.replace("MC", "Bu") else "neutral",
+               year = wcs.year,
+               mode = wcs.mode,
+               version = wcs.version,
+               binvar = wcs.binvar,
+               offset = wcs.offset
+             )
+             
+  output:
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_{offset}_combined_final.root",
+  log:
+    "output/log/{year}/{mode}/{version}_{binvar}_{offset}_combined_final.log",
+  run:
+    shell(f"""(time\
+        python tagging/combination.py\
+            --data {input.root}\
+            --version {wildcards.version}\
+            --mode {wildcards.mode}\
+            --output-sample {output.root}\
+            --os_calibration {input.os_calib}\
+            --ss_calibration {input.ss_calib}\
+            ) &> {log}""") 
+
+#This rule combines OSCombination and SSCombination and creates a new branch ->Combination
+rule final_Combination_wouter:
+  wildcard_constraints:
+    mode = "(MC_)?(Bu2JpsiKplus|Bs2DsPi|Bd2JpsiKstar)",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(p\d)?",
+    offset = "(nobias|biasJpsiPhi|biasDsPi)",
+  input:
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_combined.root",
+    #In case we need to calibrate each OS tagger and then merge
+    os_calib = lambda wcs: expand(
+              "output/params/{type}_calibration_wouter/{year}/{mode}/{version}_{binvar}_OSCombination_{offset}.json",
+               type = "Bu" if "Bu" in wcs.mode else "neutral",
+               year = wcs.year,
+               mode = wcs.mode,
+               version = wcs.version,
+               binvar = wcs.binvar,
+               offset = wcs.offset
+               ),
+
+    ss_calib = lambda wcs: expand(
+             "output/params/{type}_calibration_wouter/{year}/{mode}/{version}_{binvar}_SSCombination_{offset}.json",
+               type = "Bu" if "Bu" in wcs.mode else "neutral",
+               year = wcs.year,
+               mode = wcs.mode,
+               version = wcs.version,
+               binvar = wcs.binvar,
+               offset = wcs.offset
+             )
+             
+  output:
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_{offset}_combined_final_wouter.root",
+  log:
+    "output/log/{year}/{mode}/{version}_{binvar}_{offset}_combined_final_wouter.log",
+  run:
+    shell(f"""(time\
+        python tagging/combination_wouter.py\
+            --data {input.root}\
+            --version {wildcards.version}\
+            --mode {wildcards.mode}\
+            --output-sample {output.root}\
+            --os_calibration {input.os_calib}\
+            --ss_calibration {input.ss_calib}\
+            ) &> {log}""") 
+
+rule Bu_calibration_final:
+  wildcard_constraints:
+    # mode = "(MC_)?Bu2JpsiKplus",
+    mode = "(MC_Bu2JpsiKplus|Bu2JpsiKplus|MC_Bs2DsPi|MC_Bs2JpsiPhi|MC_Bd2JpsiKstar)",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(p\d)?",
+    tagger = "(Combination|IFT)",
+    offset = "nobias"
+  input:
+    #TODO: Fix combined could be missunderstood with trigger and not w/ OScombined
+    root = TUPLES+"/{year}/{mode}/{version}_{binvar}_{offset}_combined_final.root",
+  output:
+    params = "output/params/Bu_calibration/{year}/{mode}/{version}_{binvar}_{tagger}_{offset}.json",
+    plots = directory("output/figures/Bu_calibration/{year}/{mode}/{version}_{binvar}_{tagger}_{offset}"),
+  log:
+    "output/log/Bu_calibration/{year}/{mode}/{version}_{binvar}_{tagger}_{offset}.log",
+  run:
+    shell(f"""(time\
+        python tagging/bu_calibration.py\
+            --data {input.root}\
+            --weight sigBuSW\
+            --tagger {wildcards.tagger}\
+            --mode {wildcards.mode}\
+            --year {wildcards.year}\
+            --model linear\
+            --output-json {output.params}\
+            --output-plots {output.plots}\
+            ) &> {log}""")
+
+rule neutral_calibration_final:
+  threads: 6
+  resources:
+    mem_mb=6000
+  wildcard_constraints:
+    mode = "(Bs2DsPi|Bd2JpsiKstar)",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(p\d)?",
+    tagger = "(Combination|IFT)",
+    offset = "(nobias|biasDsPi|biasJpsiPhi)"
+  input:
+    #TODO: Fix combined could be missunderstood with trigger and not w/ OScombined
+    root = lambda wcs: expand( TUPLES+"/{year}/{mode}/{version}_{binvar}_{offset_step}.root",
+                                year = wcs.year,
+                                mode = wcs.mode,
+                                version = wcs.version,
+                                binvar = wcs.binvar,
+                                offset_step = "sweighted" if "IFT" in wcs.tagger else wcs.offset+"_combined_final"),
+                                
+    timeres_params =lambda wcs: expand("output/params/time_res_{type}/{year}/{mode}/{version}.json",
+                                year = wcs.year,
+                                mode = "Bs2DsPi_Prompt" if "Bs" in wcs.mode else "MC_Bd2JpsiKstar",
+                                type = "fit_scaled" if "Bs" in wcs.mode else "fit",
+                                version = "v2r0" if "Bs" in wcs.mode else "v1r0"),
+
+    timebias_params = "output/params/time_params/{year}/{mode}/time_pars_{offset}.json",
+    script = "tagging/dt_fit.py"
+    # script = lambda wcs: expand("tagging/{script}" ,
+    #                             script = "dt_fit.py" if "Bs" in wcs.mode else "dt_fit_bd.py"),
+  output:
+    params = "output/params/neutral_calibration/{year}/{mode}/{version}_{binvar}_{tagger}_{offset}.json",
+    plots = directory("output/figures/neutral_calibration/{year}/{mode}/{version}_{binvar}_{tagger}_{offset}"),
+  log:
+    "output/log/neutral_calibration/{year}/{mode}/{version}_{binvar}_{tagger}_{offset}.log",
+  run:
+    shell(f"""(time\
+        python {input.script}\
+            --data {input.root}\
+            --weight sigBsSW\
+            --tagger {wildcards.tagger}\
+            --offset {wildcards.offset}\
+            --time-res {input.timeres_params}\
+            --time-bias {input.timebias_params}\
+            --mode {wildcards.mode}\
+            --year {wildcards.year}\
+            --version {wildcards.version}\
+            --model linear\
+            --output-json {output.params}\
+            --output-plots {output.plots}\
+            ) &> {log}""")
+
+rule neutral_calibration_final_wouter:
+  threads: 6
+  resources:
+    mem_mb=6000
+  wildcard_constraints:
+    mode = "(Bs2DsPi|Bd2JpsiKstar)",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(p\d)?",
+    tagger = "(Combination|IFT)",
+    offset = "(nobias|biasDsPi|biasJpsiPhi)"
+  input:
+    #TODO: Fix combined could be missunderstood with trigger and not w/ OScombined
+    root = lambda wcs: expand( TUPLES+"/{year}/{mode}/{version}_{binvar}_{offset_step}.root",
+                                year = wcs.year,
+                                mode = wcs.mode,
+                                version = wcs.version,
+                                binvar = wcs.binvar,
+                                offset_step = "sweighted" if "IFT" in wcs.tagger else wcs.offset+"_combined_final_wouter"),
+                                
+    timeres_params =lambda wcs: expand("output/params/time_res_{type}/{year}/{mode}/{version}.json",
+                                year = wcs.year,
+                                mode = "Bs2DsPi_Prompt" if "Bs" in wcs.mode else "MC_Bd2JpsiKstar",
+                                type = "fit_scaled" if "Bs" in wcs.mode else "fit",
+                                version = "v2r0" if "Bs" in wcs.mode else "v1r0"),
+
+    timebias_params = "output/params/time_params/{year}/{mode}/time_pars_{offset}.json"
+  output:
+    params = "output/params/neutral_calibration_wouter/{year}/{mode}/{version}_{binvar}_{tagger}_{offset}.json",
+    plots = directory("output/figures/neutral_calibration_wouter/{year}/{mode}/{version}_{binvar}_{tagger}_{offset}"),
+  log:
+    "output/log/neutral_calibration_wouter/{year}/{mode}/{version}_{binvar}_{tagger}_{offset}.log",
+  run:
+    shell(f"""(time\
+        python tagging/dt_fit_wouter.py\
+            --data {input.root}\
+            --weight sigBsSW\
+            --tagger {wildcards.tagger}\
+            --offset {wildcards.offset}\
+            --time-res {input.timeres_params}\
+            --time-bias {input.timebias_params}\
+            --mode {wildcards.mode}\
+            --year {wildcards.year}\
+            --version {wildcards.version}\
+            --model linear\
+            --output-json {output.params}\
+            --output-plots {output.plots}\
+            ) &> {log}""")
+
+
+rule Tagging_performance_Combined:
+  wildcard_constraints:
+    mode = "(MC_)?(Bu2JpsiKplus|Bs2DsPi|Bd2JpsiKstar)",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(p\d)?",
+    type = "(Bu_calibration|neutral_calibration)", #Bu calibration implies fs calibration (this is for the moment)
+    offset = "(nobias|biasDsPi|biasJpsiPhi)"
+  input:
+    data = TUPLES+"/{year}/{mode}/{version}_{binvar}_{offset}_combined_final.root",
+    calib = [
+              "output/params/{type}/{year}/{mode}/{version}_{binvar}_OSCombination_{offset}.json",
+              "output/params/{type}/{year}/{mode}/{version}_{binvar}_SSCombination_{offset}.json",
+              "output/params/{type}/{year}/{mode}/{version}_{binvar}_Combination_{offset}.json",
+              "output/params/{type}/{year}/{mode}/{version}_{binvar}_IFT_{offset}.json"
+            ]
+  output:
+    table = "output/tables/{type}_performance_combined/{year}/{mode}/{version}_{binvar}_{offset}.tex",
+    params = "output/params/{type}_performance_combined/{year}/{mode}/{version}_{binvar}_{offset}.json",
+  log:
+    "output/log/{type}_performance/{year}/{mode}/{version}_{binvar}_{offset}.log",
+  run:
+    shell(f"""(time\
+        python tagging/tag_performance_combined.py\
+          --data {input.data}\
+          --calibrations {",".join(input.calib)}\
+          --mode {wildcards.mode}\
+          --year {wildcards.year}\
+          --offset {wildcards.offset}\
+          --output-table {output.table}\
+          --output-params {output.params}\
+            ) &> {log}""")
+
+rule Tagging_performance_Combined_wouter:
+  wildcard_constraints:
+    mode = "(MC_)?(Bu2JpsiKplus|Bs2DsPi|Bd2JpsiKstar)",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(p\d)?",
+    type = "(neutral_calibration_wouter)", #Bu calibration implies fs calibration (this is for the moment)
+    offset = "(nobias|biasDsPi|biasJpsiPhi)"
+  input:
+    data = TUPLES+"/{year}/{mode}/{version}_{binvar}_{offset}_combined_final_wouter.root",
+    calib = [
+              "output/params/{type}/{year}/{mode}/{version}_{binvar}_Combination_{offset}.json",
+              "output/params/{type}/{year}/{mode}/{version}_{binvar}_IFT_{offset}.json"
+            ]
+  output:
+    table = "output/tables/{type}_performance_combined/{year}/{mode}/{version}_{binvar}_{offset}.tex",
+    params = "output/params/{type}_performance_combined/{year}/{mode}/{version}_{binvar}_{offset}.json",
+  log:
+    "output/log/{type}_performance/{year}/{mode}/{version}_{binvar}_{offset}.log",
+  run:
+    shell(f"""(time\
+        python tagging/tag_performance_combined_wouter.py\
+          --data {input.data}\
+          --calibrations {",".join(input.calib)}\
+          --mode {wildcards.mode}\
+          --year {wildcards.year}\
+          --offset {wildcards.offset}\
+          --output-table {output.table}\
+          --output-params {output.params}\
+            ) &> {log}""")
+
+rule Tagging_performance_independent:
+  wildcard_constraints:
+    mode = "(MC_)?(Bu2JpsiKplus|Bs2DsPi|Bd2JpsiKstar)",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(p\d)?",
+    type = "(Bu_calibration|neutral_calibration)", #Bu calibration implies fs calibration (this is for the moment)
+    offset = "(nobias|biasDsPi|biasJpsiPhi)"
+  input:
+    data = TUPLES+"/{year}/{mode}/{version}_{binvar}_combined.root",
+    calib = [
+              "output/params/{type}/{year}/{mode}/{version}_{binvar}_OSCombination_{offset}.json",
+              "output/params/{type}/{year}/{mode}/{version}_{binvar}_SSCombination_{offset}.json",
+              "output/params/{type}/{year}/{mode}/{version}_{binvar}_IFT_{offset}.json"
+            ]
+  output:
+    table = "output/tables/{type}_performance_independent/{year}/{mode}/{version}_{binvar}_{offset}.tex",
+    params = "output/params/{type}_performance_independent/{year}/{mode}/{version}_{binvar}_{offset}.json",
+  log:
+    "output/log/{type}_performance/{year}/{mode}/{version}_{binvar}_{offset}.log",
+  run:
+    shell(f"""(time\
+        python tagging/tag_performance_independent.py\
+          --data {input.data}\
+          --calibrations {",".join(input.calib)}\
+          --mode {wildcards.mode}\
+          --year {wildcards.year}\
+          --offset {wildcards.offset}\
+          --output-table {output.table}\
+          --output-params {output.params}\
+            ) &> {log}""")
+
+
+rule Tagging_performance_IFTonly:
+  wildcard_constraints:
+    mode = "(MC_)?(Bu2JpsiKplus|Bs2DsPi|Bd2JpsiKstar)",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(\d)?(p\d)?",
+    type = "(Bu_calibration|neutral_calibration)", #Bu calibration implies fs calibration (this is for the moment)
+    offset = "(nobias|biasDsPi|biasJpsiPhi)",
+  input:
+    data = TUPLES+"/{year}/{mode}/{version}_{binvar}_sweighted.root",
+    calib = "output/params/{type}/{year}/{mode}/{version}_{binvar}_IFT_{offset}.json"
+            
+  output:
+    table = "output/tables/{type}_performance_IFTonly/{year}/{mode}/{version}_{binvar}_{offset}_IFTonly.tex",
+
+    params = "output/params/{type}_performance_IFTonly/{year}/{mode}/{version}_{binvar}_{offset}_IFTonly.json",
+
+  log:
+    "output/log/{type}_performance/{year}/{mode}/{version}_{binvar}_{offset}_IFTonly.log",
+  run:
+    shell(f"""(time\
+        python tagging/tag_performance_IFTonly.py\
+          --data {input.data}\
+          --calibrations {input.calib}\
+          --mode {wildcards.mode}\
+          --year {wildcards.year}\
+          --offset {wildcards.offset}\
+          --output-table {output.table}\
+          --output-params {output.params}\
+            ) &> {log}""")
+
+rule Comparison_offsets:
+  wildcard_constraints:
+    mode = "(MC_)?(Bu2JpsiKplus|Bs2DsPi|Bd2JpsiKstar)",
+    year = "20(1516|15|16|17|18)",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(p\d)?",
+    type = "(Bu_calibration|neutral_calibration)", #Bu calibration implies fs calibration (this is for the moment)
+    pipe = "(independent|combined)",
+  input:
+      nobias = "output/params/{type}_performance_{pipe}/{year}/{mode}/{version}_{binvar}_nobias.json",
+      biasJpsiPhi = "output/params/{type}_performance_{pipe}/{year}/{mode}/{version}_{binvar}_biasJpsiPhi.json",
+      biasDsPi = "output/params/{type}_performance_{pipe}/{year}/{mode}/{version}_{binvar}_biasDsPi.json",
+  output:
+    "output/tables/{type}_performance_{pipe}/{year}/{mode}/{version}_{binvar}_offsetcomparison.tex",
+  log:
+    "output/log/{type}_performance_{pipe}/{year}/{mode}/{version}_{binvar}_offsetcomparison.log",
+  run:
+    import ipanema
+    import numpy as np
+
+    pars = [f"{input.nobias}", f"{input.biasJpsiPhi}", f"{input.biasDsPi}"]
+    pars = [ipanema.Parameters.load(p) for p in pars]
+    _pars = ["Teff_Old", "D_Old", "TP_Old"]
+    _pars += ["Teff_IFT", "D_IFT", "TP_IFT"]
+    table = []
+    table.append(r"\begin{tabular}{|c|ccc|}")
+    table.append(r"\toprule")
+    col0 = f"Parameter"
+    col1 = r"No bias"
+    col2 = r"bias $B_s \rightarrow J/\psi\phi$"
+    col3 = r"bias $B_s \rightarrow D_s\pi$"
+    col4 = "Error"
+    col5 = "Diff."
+    _calign = 'l|' + 'c'*len(pars) + '|c|c'
+    table.append(f"{col0:<34} & {col1:<54} & {col2:<54} & {col3:<54} & {col4:<10} & {col5:<10}\\\\")
+    table.append(r"\midrule")
+    for p in _pars:
+      _row = [  f"$ {pars[0][p].latex:<30} $" ]
+      c = []; std=[];  _= []
+      for P in pars:
+        _row.append( f"$ {f'{P[p].uvalue:.2uL}':<50} $" )
+        c.append(P[p].uvalue.n)
+        std.append(P[p].uvalue.s)
+      for i in range(len(c)):
+        for j in range(len(c)):
+          _.append(c[i] - c[j])
+      diff = np.max(_)
+      std = np.min(std)
+      _row.append(f"$ {np.float64(std):+.3f}$")
+      _row.append(f"$ {np.float64(diff):+.3f} $")
+      table.append(" & ".join(_row))
+
+    table.append(r"\bottomrule")
+    table.append(r"\end{tabular} \\")
+    with open(f'{output}','w') as f:
+        f.write("\n".join(table))
+    f.close()
+
+    
+rule Comparison_vars:
+  wildcard_constraints:
+    mode = "(MC_)?(Bu2JpsiKplus|Bs2DsPi|Bd2JpsiKstar|Bs2JpsiPhi)",
+    year = "20(1516|15|16|17|18)",
+    mbinvar = "(full|pTB|eta|nTracks|nPV)",
+    version = "v(\d)r(\d)(p\d)?",
+    type = "(Bu_calibration|neutral_calibration)", #Bu calibration implies fs calibration (this is for the moment)
+    pipe = "(independent|combined)",
+    offset = "(nobias|biasDsPi|biasJpsiPhi)"
+  input:
+      pars = lambda wcs: expand("output/params/{type}_performance_{pipe}/{year}/{mode}/{version}_{binvar}{bin}_{offset}.json",
+                         type = wcs.type,
+                         pipe = wcs.pipe,
+                         year = wcs.year,
+                         mode = wcs.mode,
+                         version = wcs.version,
+                         binvar = wcs.mbinvar,
+                         bin = range(0,4) if wcs.mbinvar != "nPVs" else range(0,3),
+                         offset = wcs.offset),
+  output:
+    "output/tables/{type}_performance_{pipe}_comparison/{year}/{mode}/{version}_{mbinvar}_{offset}.tex",
+  log:
+    "output/log/{type}_performance_{pipe}_comparison/{year}/{mode}/{version}_{mbinvar}_{offset}.log",
+  run:
+    import ipanema
+    import numpy as np
+
+    pars = [ipanema.Parameters.load(p) for p in f"{input}".split(" ")]
+    npars = len(pars)
+    _pars = ["Teff_Old", "D_Old", "TP_Old"]
+    _pars += ["Teff_IFT", "D_IFT", "TP_IFT"]
+    table = []
+    _calign = 'l|' + 'c'*len(pars) + '|c|c'
+    table.append(r"\toprule")
+    _header = [f"{'Parameter ':<34}"]
+    for i in range(npars):
+      binvar = f"{output}".split("_")[-2]
+      b = f"{binvar}{i+1}"
+      _header += [f"{b :<54}"] 
+
+    _header += [f"{'Error ':<10}"]
+    _header += [f"{'Diff ':<10}"]
+
+    table.append(" & ".join(_header))
+    _calign = 'l|' + 'c'*npars + '|c|c'
+    table.append(r"\midrule")
+    for p in _pars:
+      _row = [  f"$ {pars[0][p].latex:<30} $" ]
+      c = []; std=[];  _= []
+      for P in pars:
+        _row.append( f"$ {f'{P[p].uvalue:.2uL}':<50} $" )
+        c.append(P[p].uvalue.n)
+        std.append(P[p].uvalue.s)
+      for i in range(len(c)):
+        for j in range(len(c)):
+          _.append(c[i] - c[j])
+      diff = np.max(_)
+      std = np.min(std)
+      _row.append(f"$ {np.float64(std):+.3f}$")
+      _row.append(f"$ {np.float64(diff):+.3f} $")
+      table.append(" & ".join(_row))
+
+    table.append(r"\bottomrule")
+    table.append(r"\end{tabular} \\")
+    with open(f'{output}','w') as f:
+        f.write(rf"\begin{{tabular}}{{{_calign}}}")
+        f.write('\n')
+        f.write("\n".join(table))
+    f.close()
+
+
+rule Tagging_performance_Combined_run2:
+  wildcard_constraints:
+    mode = "(MC_)?(Bu2JpsiKplus|Bs2DsPi|Bd2JpsiKstar|Bs2JpsiPhi)",
+    year = "run2",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(p\d)?",
+    type = "(Bu_calibration|neutral_calibration)", #Bu calibration implies fs calibration (this is for the moment)
+    offset = "(nobias|biasDsPi|biasJpsiPhi)"
+  input:
+      data = lambda wcs: expand(TUPLES+"/{year}/{mode}/{version}_{binvar}{nbin}_{offset}_combined_final.root",
+                               year = ["2016", "2017", "2018"],
+                               mode = wcs.mode,
+                               version = wcs.version,
+                               binvar = wcs.binvar,
+                               nbin = range(0,4) if wcs.binvar != "nPV" else range(0,3),
+                               offset = wcs.offset),
+
+      calib_IFT = lambda wcs: expand([
+              "output/params/{type}/2016/{mode}/{version}_{binvar}{nbin}_IFT_{offset}.json",
+              "output/params/{type}/2017/{mode}/{version}_{binvar}{nbin}_IFT_{offset}.json",
+              "output/params/{type}/2018/{mode}/{version}_{binvar}{nbin}_IFT_{offset}.json"
+            ],
+            type = wcs.type,
+            mode = wcs.mode,
+            version = wcs.version,
+            binvar = wcs.binvar,
+            nbin = range(0,4) if wcs.binvar != "nPV" else range(0,3),
+            offset = wcs.offset),
+
+      calib_Combination = lambda wcs: expand([
+              "output/params/{type}/2016/{mode}/{version}_{binvar}{nbin}_Combination_{offset}.json",
+              "output/params/{type}/2017/{mode}/{version}_{binvar}{nbin}_Combination_{offset}.json",
+              "output/params/{type}/2018/{mode}/{version}_{binvar}{nbin}_Combination_{offset}.json"
+            ],
+            type = wcs.type,
+            mode = wcs.mode,
+            version = wcs.version,
+            binvar = wcs.binvar,
+            nbin = range(0,4) if wcs.binvar != "nPV" else range(0,3),
+            offset = wcs.offset),
+      
+      calib_OSCombination = lambda wcs: expand([
+              "output/params/{type}/2016/{mode}/{version}_{binvar}{nbin}_OSCombination_{offset}.json",
+              "output/params/{type}/2017/{mode}/{version}_{binvar}{nbin}_OSCombination_{offset}.json",
+              "output/params/{type}/2018/{mode}/{version}_{binvar}{nbin}_OSCombination_{offset}.json"
+            ],
+            type = wcs.type,
+            mode = wcs.mode,
+            version = wcs.version,
+            binvar = wcs.binvar,
+            nbin = range(0,4) if wcs.binvar != "nPV" else range(0,3),
+            offset = wcs.offset),
+
+      calib_SSCombination = lambda wcs: expand([
+              "output/params/{type}/2016/{mode}/{version}_{binvar}{nbin}_SSCombination_{offset}.json",
+              "output/params/{type}/2017/{mode}/{version}_{binvar}{nbin}_SSCombination_{offset}.json",
+              "output/params/{type}/2018/{mode}/{version}_{binvar}{nbin}_SSCombination_{offset}.json"
+            ],
+            type = wcs.type,
+            mode = wcs.mode,
+            version = wcs.version,
+            binvar = wcs.binvar,
+            nbin = range(0,4) if wcs.binvar != "nPV" else range(0,3),
+            offset = wcs.offset)
+
+  output:
+    table = "output/tables/{type}_performance_combined/{year}/{mode}/{version}_{binvar}_{offset}.tex",
+    params = "output/params/{type}_performance_combined/{year}/{mode}/{version}_{binvar}_{offset}.json",
+  log:
+    "output/log/{type}_performance/{year}/{mode}/{version}_{binvar}_{offset}.log",
+  run:
+    shell(f"""(time\
+        python tagging/tag_performance_combined_merged.py\
+          --data {",".join(input.data)}\
+          --calibrations-OSCombination {",".join(input.calib_OSCombination)}\
+          --calibrations-SSCombination {",".join(input.calib_SSCombination)}\
+          --calibrations-Combination {",".join(input.calib_Combination)}\
+          --calibrations-IFT {",".join(input.calib_IFT)}\
+          --mode {wildcards.mode}\
+          --year {wildcards.year}\
+          --binvar {wildcards.binvar}\
+          --offset {wildcards.offset}\
+          --output-table {output.table}\
+          --output-params {output.params}\
+            ) #&> {log}""")
+    
+
+ 
+rule Tagging_performance_Combined_run2_wouter:
+  wildcard_constraints:
+    mode = "(MC_)?(Bu2JpsiKplus|Bs2DsPi|Bd2JpsiKstar)",
+    year = "run2",
+    binvar = "(full|pTB|eta|nTracks|nPV)(\d{1})?",
+    version = "v(\d)r(\d)(p\d)?",
+    type = "(neutral_calibration_wouter)", #Bu calibration implies fs calibration (this is for the moment)
+    offset = "(nobias|biasDsPi|biasJpsiPhi)"
+  input:
+      data = lambda wcs: expand(TUPLES+"/{year}/{mode}/{version}_{binvar}{nbin}_{offset}_combined_final_wouter.root",
+                               year = ["2016", "2017", "2018"],
+                               mode = wcs.mode,
+                               version = wcs.version,
+                               binvar = wcs.binvar,
+                               nbin = range(0,4) if wcs.binvar != "nPV" else range(0,3),
+                               offset = wcs.offset),
+
+      calib_IFT = lambda wcs: expand([
+              "output/params/{type}/2016/{mode}/{version}_{binvar}{nbin}_IFT_{offset}.json",
+              "output/params/{type}/2017/{mode}/{version}_{binvar}{nbin}_IFT_{offset}.json",
+              "output/params/{type}/2018/{mode}/{version}_{binvar}{nbin}_IFT_{offset}.json"
+            ],
+            type = wcs.type,
+            mode = wcs.mode,
+            version = wcs.version,
+            binvar = wcs.binvar,
+            nbin = range(0,4) if wcs.binvar != "nPV" else range(0,3),
+            offset = wcs.offset),
+
+      calib_Combination = lambda wcs: expand([
+              "output/params/{type}/2016/{mode}/{version}_{binvar}{nbin}_Combination_{offset}.json",
+              "output/params/{type}/2017/{mode}/{version}_{binvar}{nbin}_Combination_{offset}.json",
+              "output/params/{type}/2018/{mode}/{version}_{binvar}{nbin}_Combination_{offset}.json"
+            ],
+            type = wcs.type,
+            mode = wcs.mode,
+            version = wcs.version,
+            binvar = wcs.binvar,
+            nbin = range(0,4) if wcs.binvar != "nPV" else range(0,3),
+            offset = wcs.offset)
+
+  output:
+    table = "output/tables/{type}_performance_combined/{year}/{mode}/{version}_{binvar}_{offset}.tex",
+    params = "output/params/{type}_performance_combined/{year}/{mode}/{version}_{binvar}_{offset}.json",
+  log:
+    "output/log/{type}_performance/{year}/{mode}/{version}_{binvar}_{offset}.log",
+  run:
+    shell(f"""(time\
+        python tagging/tag_performance_combined_merged_wouter.py\
+          --data {",".join(input.data)}\
+          --calibrations-Combination {",".join(input.calib_Combination)}\
+          --calibrations-IFT {",".join(input.calib_IFT)}\
+          --mode {wildcards.mode}\
+          --year {wildcards.year}\
+          --binvar {wildcards.binvar}\
+          --offset {wildcards.offset}\
+          --output-table {output.table}\
+          --output-params {output.params}\
+            ) &> {log}""")
+    
+
+ 

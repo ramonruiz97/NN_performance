@@ -1,0 +1,214 @@
+__author__ = ["John Wendel", "Ramon Angel Ruiz Fernandez"]
+__email__ = ["john.wendel@cern.ch", "rruizfer@cern.ch"]
+
+
+#Pre-main-BDT -> 
+#Know if the track is SS, OSFragmentation, OSSignal or BKG
+#This can give you an output that is only needed if the model 
+#is set to TrackTypes.
+
+rule train_TrackTypes:
+    """
+    Train Track Category BDT.
+    """
+    wildcard_constraints:
+        mode = "MC_(Bu2JpsiKplus|Bs2DsPi|Bd2JpsiKstar)"
+    input:
+        root2016 = TUPLES_TRAINING+"/2016/{mode}/{mode}_2016_raw.root",
+        root2017 = TUPLES_TRAINING+"/2017/{mode}/{mode}_2017_raw.root",
+        root2018 = TUPLES_TRAINING+"/2018/{mode}/{mode}_2018_raw.root"
+    output:
+        model = "output/models/BDT/TrackTypes/{mode}/{mode}_TrackTypes.dat"
+    log: 
+        "output/log/training/{mode}_TrackTypes/{mode}_Tracktypes.log"
+
+    run: 
+        shell(f"""
+                (time\
+                python IFT/tracktypes_training.py\
+                {input.root2016} {input.root2017} {input.root2018}\
+                --mode {wildcards.mode}\
+                --tree {wildcards.mode}Detached/DecayTree\
+                --out {output.model}\
+                ) &> {log}
+                """)
+
+#TODO : Also a preprocess for data
+rule preprocess:
+    """
+    Creating npz files that can be fed into Torch as NN training
+    """
+    #threads: 2
+    wildcard_constraints:
+        mode = "MC_(Bu2JpsiKplus|Bs2DsPi|Bd2JpsiKstar)",
+        year = "20(15|16|17|18)",
+        model = "(minimal|TrackTypes)"
+        #TODO: Add a wildcard for cut
+        # To discuss w/ John
+        #to do life easier for Snakemake
+    input:
+        root = TUPLES_TRAINING+"/{year}/{mode}/{mode}_{year}_raw.root",
+        BDTmodel =  lambda wcs: ["output/models/BDT/TrackTypes/{mode}/{mode}_TrackTypes.dat"] if "TrackTypes" in wcs.model else [],
+
+    output:
+        #For the moment nocut -> bkgcut to False
+        npz = TUPLES+"/npz/{mode}_{year}_{model}_NN_{cut}.npz"
+    log:
+        "output/log/preprocess/{mode}/{year}/{mode}_{year}_{model}_NN_{cut}.log"
+    run:
+        shell(f"""
+                (time\
+                python IFT/preprocess.py\
+                --input {input.root}\
+                --mode {wildcards.mode}\
+                --tree {wildcards.mode}Detached/DecayTree\
+                --out {output.npz}\
+                --model {wildcards.model}\
+                --BDTmodel {input.BDTmodel}\
+                --bkgcut {wildcards.cut}
+                ) &> {log}
+                """)
+
+
+rule preprocess_data:
+    """
+    Creating npz files that can be fed into Torch as NN training
+    """
+    #threads: 2
+    wildcard_constraints:
+        mode = "(Bu2JpsiKplus|Bs2DsPi|Bd2JpsiKstar)",
+        year = "20(15|16|17|18)",
+        model = "(minimal|TrackTypes)"
+        #TODO: Add a wildcard for cut
+        # To discuss w/ John
+        #to do life easier for Snakemake
+    input:
+        root = TUPLES_TRAINING+"/{year}/{mode}/{mode}_{year}_raw.root",
+        BDTmodel =  lambda wcs: ["output/models/BDT/TrackTypes/MC_{mode}/MC_{mode}_TrackTypes.dat"] if "TrackTypes" in wcs.model else [],
+
+    output:
+        #For the moment nocut -> bkgcut to False
+        npz = TUPLES+"/npz/{mode}_{year}_{model}_NN_{cut}.npz"
+    log:
+        "output/log/preprocess/{mode}/{year}/{mode}_{year}_{model}_NN_{cut}.log"
+    run:
+        shell(f"""
+                (time\
+                python IFT/preprocess.py\
+                --input {input.root}\
+                --mode {wildcards.mode}\
+                --tree {wildcards.mode}Detached/DecayTree\
+                --out {output.npz}\
+                --model {wildcards.model}\
+                --BDTmodel {input.BDTmodel}\
+                --bkgcut {wildcards.cut}\
+                --split 10
+                ) &> {log}
+                """)
+
+rule train_model:
+    """
+    Train a DeepSet based IFT model.
+    """
+    #threads: 2
+    wildcard_constraints:
+        mode = "(MC_)(Bu2JpsiKplus|Bs2DsPi|Bd2JpsiKstar)",
+        model = "(minimal|TrackTypes)"
+    input:
+        npz2016 = TUPLES+"/npz/{mode}_2016_{model}_NN_{cut}.npz",
+        npz2017 = TUPLES+"/npz/{mode}_2017_{model}_NN_{cut}.npz",
+        npz2018 = TUPLES+"/npz/{mode}_2018_{model}_NN_{cut}.npz"
+    output:
+        model = "output/models/NN/{mode}_{model}_{cut}.pt",
+        plots = directory("output/figures/NN_training/{mode}_{model}_{cut}")
+    log:
+        "output/log/training/{mode}/{mode}_{model}_{cut}.log"
+
+    run:
+        shell(f"""
+                (time\
+                python IFT/model_training.py\
+                {input.npz2016} {input.npz2017} {input.npz2018}\
+                -epochs 100\
+                -mode {wildcards.mode}\
+                -model {wildcards.model}\
+                -cut {wildcards.cut}\
+                -out {output.model}\
+                -out-plots {output.plots}\
+                ) &> {log}
+                """)
+
+
+rule applyIFT_Data:
+    """
+    Apply an IFT model to an existing root file
+    """
+    #threads: 2
+    resources:
+        mem_mb=50000
+    wildcard_constraints:
+        mode = "(Bu2JpsiKplus|Bs2DsPi|Bd2JpsiKstar)",
+        year = "20(15|16|17|18)",
+        model = "(minimal|TrackTypes)",
+    input:
+        root = TUPLES_TRAINING+"/{year}/{mode}/{mode}_{year}_raw.root",
+        npz = TUPLES+"/npz/{mode}_{year}_{model}_NN_{cut}.npz",
+        nn_model = "output/models/NN/MC_{mode}_{model}_{cut}.pt",
+        bdt_model =  lambda wcs: ["output/models/BDT/TrackTypes/MC_{mode}/MC_{mode}_TrackTypes.dat"] if "TrackTypes" in wcs.model else [],
+    output:
+        root = TUPLES+"/{year}/{mode}/{mode}_{year}_{model}_tagged_{cut}.root"
+    log:
+        "output/log/apply/{year}/{mode}/{mode}_{year}_{model}_{cut}.log"
+    run:
+        shell(f"""
+                (time\
+                python IFT/ApplyIFT.py\
+		        {input.npz}\
+                -rootfile {input.root}\
+                -NNmodel {input.nn_model}\
+                -model {wildcards.model}\
+                -mode {wildcards.mode}\
+                -out {output.root}\
+                -DataMC Data\
+                ) &> {log}
+                """) 
+                  
+
+
+#TODO: Merge w/ previous one if needed 
+rule applyIFT_MC:
+    """
+    Apply an IFT model to an existing root file
+    """
+    #threads: 2
+    resources:
+        mem_mb=10000
+
+    wildcard_constraints:
+        mode = "(Bu2JpsiKplus|Bs2DsPi|Bd2JpsiKstar)",
+        year = "20(15|16|17|18)",
+        model = "(minimal|BDT|TrackTypes)",
+    input:
+        root = TUPLES_TRAINING+"/{year}/MC_{mode}/MC_{mode}_{year}_raw.root",
+        npz = TUPLES+"/npz/MC_{mode}_{year}_{model}_NN_{cut}.npz",
+        nn_model = "output/models/NN/MC_{mode}_{model}_{cut}.pt",
+        bdt_model =  lambda wcs: ["output/models/BDT/TrackTypes/MC_{mode}/MC_{mode}_TrackTypes.dat"] if "TrackTypes" in wcs.model else [],
+
+    output:
+        root = TUPLES+"/{year}/MC_{mode}/MC_{mode}_{year}_{model}_tagged_{cut}.root"
+    log:
+        "output/log/apply/{year}/MC_{mode}/MC_{mode}_{year}_{model}_{cut}.log"
+    run:
+        shell(f"""
+                (time\
+                python IFT/ApplyIFT.py\
+		        {input.npz}\
+                -rootfile {input.root}\
+                -NNmodel {input.nn_model}\
+                -model {wildcards.model}\
+                -mode {wildcards.mode}\
+                -out {output.root}\
+                -DataMC MC\
+                ) &> {log}
+                """) 
+

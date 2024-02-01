@@ -1,0 +1,23 @@
+{
+  "v0r0" : ["minimal", "nocut"],
+  "v1r0" : ["TrackTypes", "nocut"], 
+  "v1r1" : ["TrackTypes", "bkg95"],
+  "v1r2" : ["TrackTypes", "bkg90"],
+  "v1r3" : ["TrackTypes", "bkg85"],
+  "v1r4" : ["TrackTypes", "bkg80"],
+  "v1r5" : ["TrackTypes", "bkg75"],
+  "v1r6" : ["TrackTypes", "bkg70"],
+  "v1r7" : ["TrackTypes", "bkg65"],
+  "v1r8" : ["TrackTypes", "bkg60"],
+  "v1r9" : ["TrackTypes", "bkg55"],
+  "v1r10" : ["TrackTypes", "bkg50"],
+  "v1r11" : ["TrackTypes", "bkg45"],
+  "v1r12" : ["TrackTypes", "bkg40"],
+  "v1r13" : ["TrackTypes", "bkg35"],
+  "v1r14" : ["TrackTypes", "bkg30"],
+  "v1r15" : ["TrackTypes", "bkg25"],
+  "v1r16" : ["TrackTypes", "bkg20"],
+  "v1r17" : ["TrackTypes", "bkg15"],
+  "v1r18" : ["TrackTypes", "bkg10"],
+  "v1r19" : ["TrackTypes", "bkg05"]
+}

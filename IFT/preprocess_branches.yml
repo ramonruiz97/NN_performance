@@ -1,0 +1,73 @@
+Trainfeatures: &Trainfeatures
+  #Everything with Tr_T is a per track feature of all underlying tracks in an event
+  "B_len": "B_len"
+  "Tr_T_PIDK": "Tr_T_PIDK"
+  "Tr_T_PIDe": "Tr_T_PIDe"
+  "Tr_T_PIDmu": "Tr_T_PIDmu"
+  "Tr_T_PIDp": "Tr_T_PIDp"
+  "Tr_T_PROBNNe": "Tr_T_PROBNNe"
+  "Tr_T_PROBNNghost": "Tr_T_PROBNNghost"
+  "Tr_T_PROBNNk": "Tr_T_PROBNNk"
+  "Tr_T_PROBNNmu": "Tr_T_PROBNNmu"
+  "Tr_T_PROBNNp": "Tr_T_PROBNNp"
+  "Tr_T_PROBNNpi": "Tr_T_PROBNNpi"
+  "Tr_T_P": "Tr_T_P"
+  "Tr_T_PT": "Tr_T_PT"
+  "Tr_T_Charge": "Tr_T_Charge"
+  "Tr_T_BPVIP": "Tr_T_BPVIP"
+  "Tr_T_BPVIPCHI2": "Tr_T_BPVIPCHI2"
+  "Tr_T_SumBDT_ult": "Tr_T_SumBDT_ult"
+  "Tr_T_VeloCharge": "Tr_T_VeloCharge"
+  "Tr_T_IP_trMother": "Tr_T_IP_trMother"
+  "Tr_T_TRCHI2DOF": "Tr_T_TRCHI2DOF"
+
+perEvtFeatures: &perEvtFeatures
+  "B_OSElectronLatest_TAGDEC": "B_OSElectronLatest_TAGDEC"
+  "B_OSMuonLatest_TAGDEC": "B_OSMuonLatest_TAGDEC"
+  "B_OSVtxCh_TAGDEC": "B_OSVtxCh_TAGDEC"
+  "B_OSKaonLatest_TAGDEC": "B_OSKaonLatest_TAGDEC"
+  "B_OSCharm_TAGDEC": "B_OSCharm_TAGDEC"
+  "B_SSKaonLatest_TAGDEC": "B_SSKaonLatest_TAGDEC"
+  "B_SSPion_TAGDEC": "B_SSPion_TAGDEC"
+  "B_SSProton_TAGDEC": "B_SSProton_TAGDEC"
+
+calculation: &calculation
+  #These features are used for the calculation of other NN features
+  #Again, Tr_T is per track, rest is per event
+  "B_PX": "B_PX"
+  "B_PY": "B_PY"
+  "B_PZ": "B_PZ"
+  "B_PE": "B_PE"
+  "B_LOKI_ETA": "B_LOKI_ETA"
+  "B_LOKI_PHI": "B_LOKI_PHI"
+  "Tr_T_Eta": "Tr_T_Eta"
+  "Tr_T_Phi": "Tr_T_Phi"
+  "Tr_T_PX": "Tr_T_PX"
+  "Tr_T_PY": "Tr_T_PY"
+  "Tr_T_PZ": "Tr_T_PZ"
+  "Tr_T_E": "Tr_T_E"
+  "Tr_T_zfirst": "Tr_T_zfirst"
+  "B_OWNPV_Z": "B_OWNPV_Z"
+
+extra: &extra
+  #Additional branches that need to be included
+  "B_TRUEID": "B_TRUEID"
+  "B_ID": "B_ID"
+
+tracktypes: &tracktypes
+  #TupleTools branches that contain information about origin of a track
+  "Tr_ORIG_FLAGS": "Tr_ORIG_FLAGS"
+
+NNfeatures: &NNfeatures
+  <<: *Trainfeatures
+  <<: *calculation
+  <<: *perEvtFeatures
+
+NNfeaturesTrain: &NNfeaturesTrain
+  <<: *NNfeatures
+  <<: *extra
+
+TTBDTfeaturesTrain: &TTBDTfeaturesTrain
+  <<: *NNfeatures 
+  <<: *tracktypes
+
